@@ -36,10 +36,10 @@ import java.security.SecureRandom;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -175,6 +175,10 @@ public class AppUtils {
     public String formatDate(Date date, String format) {
         String currentDateTime = new SimpleDateFormat(format).format(date);
         return currentDateTime;
+    }
+
+    public String getDate() {
+        return getDate("dd-MMM-yyyy HH:mm:ss");
     }
 
     public String getTimestamp() {
@@ -706,4 +710,134 @@ public class AppUtils {
         Date d = cal.getTime();
         return d;
     }
+
+    public String momentByMonth(Date date) {
+        return momentByMonth(date, "Yesterday", "Today", "Tomorrow");
+    }
+
+    public String momentByMonth(Date date, String yesterdayText, String todayText, String tomorrowText) {
+        ZonedDateTime dt = date.toInstant().atZone(ZoneId.systemDefault());
+        DateTimeFormatter MMYYYY_Format = DateTimeFormatter.ofPattern("MMM yyyy", Locale.getDefault());
+
+        // check difference in days from today, considering just the date (ignoring the hours)
+        long days = ChronoUnit.DAYS.between(LocalDate.now(), dt.toLocalDate());
+        if (days == 0) { // today
+//            sb.append("Today ");
+            return ((nonNull(todayText) ? todayText : "Today"));
+        } else if (days == 1) { // tomorrow
+//            sb.append("Tomorrow ");
+            return ((nonNull(yesterdayText) ? tomorrowText : "Tomorrow"));
+        } else if (days == -1) { // yesterday
+//            sb.append("Yesterday ");
+            return ((nonNull(yesterdayText) ? yesterdayText : "Yesterday"));
+        } else if (days > 0 && days < 7) { // next week
+            return (dt.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.getDefault()));
+        } else if (days < 0 && days > -7) { // last week
+//            sb.append("Last ").append(dt.getDayOfWeek().getDisplayName(TextStyle.FULL, CoreConstants.DEFAULT_LOCALE)).append(" ");
+            String result = "Last " + dt.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.getDefault());
+            result = result + " ";
+            return (result);
+        } else {
+            return dt.format(MMYYYY_Format);
+        }
+    }
+
+
+    public String moment(Date date, String yesterdayText, String todayText, String tomorrowText) {
+        ZonedDateTime dt = date.toInstant().atZone(ZoneId.systemDefault());
+        StringBuilder sb = new StringBuilder();
+        DateTimeFormatter HOUR_FORMAT = DateTimeFormatter.ofPattern("h:mm a", Locale.getDefault());
+//        DateTimeFormatter MDY_FORMAT = DateTimeFormatter.ofPattern("M/d/yyyy");
+//        DateTimeFormatter MDY_FORMAT = DateTimeFormatter.ofPattern("dd MMM, yyyy hh:mm a");
+        DateTimeFormatter DAY_OF_MONTH_FORMAT = DateTimeFormatter.ofPattern("d", Locale.getDefault());
+        DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MMM, yyyy hh:mm a", Locale.getDefault());
+
+        // check difference in days from today, considering just the date (ignoring the hours)
+        long days = ChronoUnit.DAYS.between(LocalDate.now(), dt.toLocalDate());
+        if (days == 0) { // today
+//            sb.append("Today ");
+            sb.append((nonNull(todayText) ? todayText : "Today "));
+        } else if (days == 1) { // tomorrow
+//            sb.append("Tomorrow ");
+            sb.append((nonNull(yesterdayText) ? tomorrowText : "Tomorrow "));
+        } else if (days == -1) { // yesterday
+//            sb.append("Yesterday ");
+            sb.append((nonNull(yesterdayText) ? yesterdayText : "Yesterday "));
+        } else if (days > 0 && days < 7) { // next week
+            sb.append(dt.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.getDefault())).append(" ");
+        } else if (days < 0 && days > -7) { // last week
+
+//            sb.append("Last ").append(dt.getDayOfWeek().getDisplayName(TextStyle.FULL, CoreConstants.DEFAULT_LOCALE)).append(" ");
+            String result = "Last " + dt.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.getDefault());
+            result = result + " ";
+            sb.append(result);
+        }
+
+        if (Math.abs(days) < 7) {  // difference is less than a week, append current time
+            sb.append("at ").append(dt.format(HOUR_FORMAT));
+        } else { // more than a week of difference
+            sb.append(dt.format(DAY_OF_MONTH_FORMAT) + getDayOfMonthSuffix(dt.getDayOfMonth()) + " " + dt.format(DATE_FORMAT));
+        }
+        return sb.toString();
+    }
+
+    private String getDayOfMonthSuffix(int day) {
+        switch (day % 10) {
+            case 1:
+                return "st";
+            case 2:
+                return "nd";
+            case 3:
+                return "rd";
+            default:
+                return "th";
+        }
+    }
+
+    /**
+     * To replace last index of any value
+     *
+     * @param text        example: http://example.com/foo/bar/1
+     * @param indexOf     example: '/'
+     * @param replacement example: '*'
+     * @return this will return http://example.com/foo/bar/*
+     */
+    public String replaceLastIndexOf(String text, String indexOf, String replacement) {
+        String searchString = text.substring(text.lastIndexOf(indexOf) + 1);
+        return replace(text, searchString, replacement);
+    }
+
+    public String getLanguageCode(Locale locale) {
+        String languageCode = locale.getLanguage();
+        if (languageCode.contains("_")) {
+            languageCode = languageCode.split("_")[0];
+        }
+        return languageCode;
+    }
+
+    public Constants.DayOfWeek getDayOfWeek() {
+        return getDayOfWeek(new Date());
+    }
+
+    public Constants.DayOfWeek getDayOfWeek(Date date) {
+        ZonedDateTime dt = date.toInstant().atZone(ZoneId.systemDefault());
+        switch (dt.getDayOfWeek()) {
+            case FRIDAY:
+                return Constants.DayOfWeek.Friday;
+            case MONDAY:
+                return Constants.DayOfWeek.Monday;
+            case SUNDAY:
+                return Constants.DayOfWeek.Sunday;
+            case TUESDAY:
+                return Constants.DayOfWeek.Tuesday;
+            case SATURDAY:
+                return Constants.DayOfWeek.Saturday;
+            case THURSDAY:
+                return Constants.DayOfWeek.Thursday;
+            case WEDNESDAY:
+                return Constants.DayOfWeek.Wednesday;
+        }
+        return Constants.DayOfWeek.Monday;
+    }
+
 }
