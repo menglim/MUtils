@@ -1,4 +1,4 @@
-package org.suorsdey;
+package com.github.menglim.mutils;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;

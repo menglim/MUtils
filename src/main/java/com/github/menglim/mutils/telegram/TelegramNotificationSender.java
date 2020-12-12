@@ -1,4 +1,4 @@
-package org.suorsdey.telegram;
+package com.github.menglim.mutils.telegram;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.request.ParseMode;
@@ -6,7 +6,7 @@ import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.suorsdey.AppUtils;
+import com.github.menglim.mutils.AppUtils;
 
 @Slf4j
 public class TelegramNotificationSender {

@@ -1,4 +1,4 @@
-package org.suorsdey.telegram;
+package com.github.menglim.mutils.telegram;
 
 public class TelegramNotificationSenderTest {
 

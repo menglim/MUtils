@@ -1,9 +1,8 @@
-package org.suorsdey;
+package com.github.menglim.mutils;
 
 
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.jcajce.provider.symmetric.AES;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;

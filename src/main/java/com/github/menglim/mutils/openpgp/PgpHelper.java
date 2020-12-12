@@ -1,4 +1,4 @@
-package org.suorsdey.openpgp;
+package com.github.menglim.mutils.openpgp;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;

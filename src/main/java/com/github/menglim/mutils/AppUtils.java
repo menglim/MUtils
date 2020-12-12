@@ -1,4 +1,4 @@
-package org.suorsdey;
+package com.github.menglim.mutils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,4 +1,4 @@
-package org.suorsdey;
+package com.github.menglim.mutils;
 
 import java.util.Date;
 import java.util.LinkedHashMap;

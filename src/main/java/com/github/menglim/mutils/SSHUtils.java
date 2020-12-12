@@ -1,4 +1,4 @@
-package org.suorsdey;
+package com.github.menglim.mutils;
 
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
