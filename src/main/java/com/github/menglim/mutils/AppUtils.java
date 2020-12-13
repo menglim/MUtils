@@ -687,29 +687,29 @@ public class AppUtils {
         return Math.abs(new Date().getTime() - inputDate.getTime()) > MillisecondPerHour;
     }
 
-    public Date getEarlyDate(Date date) {
-        date = getDate(formatDate(date, "dd-MMM-yyyy"), "dd-MMM-yyyy");
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        cal.set(Calendar.HOUR, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        Date d = cal.getTime();
-        return d;
-    }
-
-    public Date getEODDate(Date date) {
-        date = getEarlyDate(date);
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        cal.set(Calendar.HOUR, 23);
-        cal.set(Calendar.MINUTE, 59);
-        cal.set(Calendar.SECOND, 59);
-        cal.set(Calendar.MILLISECOND, 999);
-        Date d = cal.getTime();
-        return d;
-    }
+//    public Date getEarlyDate(Date date) {
+//        date = getDate(formatDate(date, "dd-MMM-yyyy"), "dd-MMM-yyyy");
+//        Calendar cal = Calendar.getInstance();
+//        cal.setTime(date);
+//        cal.set(Calendar.HOUR, 0);
+//        cal.set(Calendar.MINUTE, 0);
+//        cal.set(Calendar.SECOND, 0);
+//        cal.set(Calendar.MILLISECOND, 0);
+//        Date d = cal.getTime();
+//        return d;
+//    }
+//
+//    public Date getEODDate(Date date) {
+//        date = getEarlyDate(date);
+//        Calendar cal = Calendar.getInstance();
+//        cal.setTime(date);
+//        cal.set(Calendar.HOUR, 23);
+//        cal.set(Calendar.MINUTE, 59);
+//        cal.set(Calendar.SECOND, 59);
+//        cal.set(Calendar.MILLISECOND, 999);
+//        Date d = cal.getTime();
+//        return d;
+//    }
 
     public String momentByMonth(Date date) {
         return momentByMonth(date, "Yesterday", "Today", "Tomorrow");
@@ -815,29 +815,26 @@ public class AppUtils {
         return languageCode;
     }
 
-    public Constants.DayOfWeek getDayOfWeek() {
+    public DayOfWeek getDayOfWeek() {
         return getDayOfWeek(new Date());
     }
 
-    public Constants.DayOfWeek getDayOfWeek(Date date) {
+    public DayOfWeek getDayOfWeek(Date date) {
         ZonedDateTime dt = date.toInstant().atZone(ZoneId.systemDefault());
-        switch (dt.getDayOfWeek()) {
-            case FRIDAY:
-                return Constants.DayOfWeek.Friday;
-            case MONDAY:
-                return Constants.DayOfWeek.Monday;
-            case SUNDAY:
-                return Constants.DayOfWeek.Sunday;
-            case TUESDAY:
-                return Constants.DayOfWeek.Tuesday;
-            case SATURDAY:
-                return Constants.DayOfWeek.Saturday;
-            case THURSDAY:
-                return Constants.DayOfWeek.Thursday;
-            case WEDNESDAY:
-                return Constants.DayOfWeek.Wednesday;
-        }
-        return Constants.DayOfWeek.Monday;
+        return dt.getDayOfWeek();
     }
+
+    public Date getAtStartOfDay(Date date) {
+        LocalDateTime localDateTime = LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
+        LocalDateTime startOfDay = localDateTime.with(LocalTime.MIN);
+        return Date.from(startOfDay.atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+    public Date getAtEndOfDay(Date date) {
+        LocalDateTime localDateTime = LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
+        LocalDateTime endOfDay = localDateTime.with(LocalTime.MAX);
+        return Date.from(endOfDay.atZone(ZoneId.systemDefault()).toInstant());
+    }
+
 
 }
