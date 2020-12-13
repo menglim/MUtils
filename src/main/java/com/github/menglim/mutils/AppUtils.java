@@ -21,6 +21,7 @@ import org.xml.sax.SAXException;
 import javax.activation.MimetypesFileTypeMap;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
+import javax.net.ssl.HttpsURLConnection;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -28,9 +29,9 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.text.DecimalFormat;
@@ -836,5 +837,67 @@ public class AppUtils {
         return Date.from(endOfDay.atZone(ZoneId.systemDefault()).toInstant());
     }
 
+    public InputStream post(String url, Constants.ContentType contentType, String body) throws Exception {
+        try {
+            log.info(body);
+            URL urlConnection = new URL(url);
+            HttpsURLConnection conn = (HttpsURLConnection) urlConnection.openConnection();
+            // set required headers
+            switch (contentType) {
+                case XML:
+                    conn.setRequestProperty("Content-Type", "text/xml;charset=UTF-8");
+                    break;
+                case JSON:
+                    conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+                    break;
+            }
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
+            conn.setFixedLengthStreamingMode(bodyBytes.length);
+            BufferedOutputStream out = new BufferedOutputStream(conn.getOutputStream());
+            out.write(bodyBytes);
+            out.close();
+            conn.connect();
+            int statusCode = conn.getResponseCode();
+
+            if (statusCode == HttpURLConnection.HTTP_OK) {
+                InputStream content = new BufferedInputStream(conn.getInputStream());
+                return content;
+            } else {
+                throw new Exception("HTTP Status: " + statusCode);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw e;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    public String convertStreamToString(InputStream is) {
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        StringBuilder sb = new StringBuilder();
+
+        String line = null;
+        try {
+            while ((line = reader.readLine()) != null) {
+                sb.append(line + "\n");
+            }
+        } catch (IOException e) {
+
+        } finally {
+            try {
+                is.close();
+            } catch (IOException e) {
+
+            }
+        }
+        return sb.toString();
+    }
 
 }
