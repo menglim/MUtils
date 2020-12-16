@@ -37,7 +37,6 @@ import javax.xml.xpath.XPathFactory;
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.io.*;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -895,14 +894,14 @@ public class AppUtils {
         String line = null;
         try {
             while ((line = reader.readLine()) != null) {
-                sb.append(line + "\n");
+                sb.append(line).append("\n");
             }
-        } catch (IOException e) {
+        } catch (IOException ignored) {
 
         } finally {
             try {
                 is.close();
-            } catch (IOException e) {
+            } catch (IOException ignored) {
 
             }
         }
@@ -911,6 +910,39 @@ public class AppUtils {
 
     public String toCSVText(Object object) {
         return toCSVText(object, '|');
+    }
+
+    public String toCSVHeader(Object object) {
+        return toCSVHeader(object, '|');
+    }
+
+    public String toCSVHeader(Object object, char separator) {
+        StringBuilder builder = new StringBuilder();
+        String result = "";
+        Field[] fields = object.getClass().getDeclaredFields();
+        List<CSVModel> models = new ArrayList<>();
+        int order = 0;
+        String fieldName = "";
+        for (Field field : fields) {
+            fieldName = field.getName();
+            CSVField annotation = field.getAnnotation(CSVField.class);
+            if (annotation != null) {
+                if (annotation.ignore()) continue;
+                fieldName = annotation.value();
+                order = annotation.order();
+            }
+            models.add(new CSVModel(fieldName, null, order));
+        }
+        models.sort(Comparator.comparing(CSVModel::getFieldOrder));
+        models.forEach(csvModel -> {
+            builder.append(csvModel.getFieldName());
+            builder.append(separator);
+        });
+        result = builder.toString().trim();
+        if (result.endsWith(String.valueOf(separator))) {
+            result = result.substring(0, result.length() - 1);
+        }
+        return result;
     }
 
     public String toCSVText(Object object, char separator) {
@@ -924,13 +956,12 @@ public class AppUtils {
         Object fieldValue = null;
         for (Field field : fields) {
             fieldName = field.getName();
-            Annotation annotation = field.getAnnotation(CSVField.class);
+            CSVField annotation = field.getAnnotation(CSVField.class);
             if (annotation != null) {
-                CSVField csvField = (CSVField) annotation;
-                if (csvField.ignore()) continue;
-                fieldName = csvField.value();
-                order = csvField.order();
-                formatDate = csvField.formatDate();
+                if (annotation.ignore()) continue;
+                fieldName = annotation.value();
+                order = annotation.order();
+                formatDate = annotation.formatDate();
             }
             fieldValue = getFieldValue(object, field);
             if (field.getType().equals(Date.class)) {
@@ -944,11 +975,9 @@ public class AppUtils {
             builder.append(csvModel.getFieldValue());
             builder.append(separator);
         });
-        if (builder != null) {
-            result = builder.toString().trim();
-            if (result.endsWith(String.valueOf(separator))) {
-                result = result.substring(0, result.length() - 1);
-            }
+        result = builder.toString().trim();
+        if (result.endsWith(String.valueOf(separator))) {
+            result = result.substring(0, result.length() - 1);
         }
         return result;
     }
@@ -965,6 +994,7 @@ public class AppUtils {
             e.printStackTrace();
         }
 
+        assert propertyDescriptor != null;
         return propertyDescriptor.getReadMethod();
     }
 
@@ -1003,6 +1033,9 @@ public class AppUtils {
             client.authPassword(username, password);
             SFTPClient sftpClient = client.newSFTPClient();
             files.forEach((localFilename, remoteDirectory) -> {
+                if (remoteDirectory.endsWith("/")) {
+                    remoteDirectory = remoteDirectory.substring(0, remoteDirectory.length() - 1);
+                }
                 try {
                     sftpClient.put(localFilename, remoteDirectory + "/" + getFileName(localFilename));
                 } catch (IOException e) {
@@ -1020,6 +1053,9 @@ public class AppUtils {
 
     public boolean uploadFileViaSSH(String host, String username, String password, List<String> localFilenames, String remoteDirectory) {
         try {
+            if (remoteDirectory.endsWith("/")) {
+                remoteDirectory = remoteDirectory.substring(0, remoteDirectory.length() - 1);
+            }
             SSHClient client = new SSHClient();
             client.addHostKeyVerifier(new PromiscuousVerifier());
             client.connect(host);
