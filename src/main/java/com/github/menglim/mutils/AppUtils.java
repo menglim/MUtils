@@ -10,6 +10,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import lombok.extern.slf4j.Slf4j;
+import net.schmizz.sshj.SSHClient;
+import net.schmizz.sshj.sftp.SFTPClient;
+import net.schmizz.sshj.transport.verification.PromiscuousVerifier;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONException;
@@ -933,7 +936,7 @@ public class AppUtils {
             if (field.getType().equals(Date.class)) {
                 fieldValue = getFieldDateValue(object, field, formatDate);
             }
-            models.add(new CSVModel(fieldName, fieldValue, order));
+            models.add(new CSVModel(fieldName, (fieldValue == null ? "" : fieldValue), order));
         }
 
         models.sort(Comparator.comparing(CSVModel::getFieldOrder));
@@ -990,6 +993,54 @@ public class AppUtils {
         }
 
         return null;
+    }
+
+    public boolean uploadFileViaSSH(String host, String username, String password, HashMap<String, String> files) {
+        try {
+            SSHClient client = new SSHClient();
+            client.addHostKeyVerifier(new PromiscuousVerifier());
+            client.connect(host);
+            client.authPassword(username, password);
+            SFTPClient sftpClient = client.newSFTPClient();
+            files.forEach((localFilename, remoteDirectory) -> {
+                try {
+                    sftpClient.put(localFilename, remoteDirectory + "/" + getFileName(localFilename));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            sftpClient.close();
+            client.disconnect();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean uploadFileViaSSH(String host, String username, String password, List<String> localFilenames, String remoteDirectory) {
+        try {
+            SSHClient client = new SSHClient();
+            client.addHostKeyVerifier(new PromiscuousVerifier());
+            client.connect(host);
+            client.authPassword(username, password);
+            SFTPClient sftpClient = client.newSFTPClient();
+            for (int i = 0; i < localFilenames.size(); i++) {
+                sftpClient.put(localFilenames.get(i), remoteDirectory + "/" + getFileName(localFilenames.get(i)));
+            }
+            sftpClient.close();
+            client.disconnect();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public String getFileName(String filename) {
+        File file = new File(filename);
+        String name = file.getName();
+        return name;
     }
 
 }
