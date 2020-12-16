@@ -3,6 +3,8 @@ package com.github.menglim.mutils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.github.menglim.mutils.annotation.CSVField;
+import com.github.menglim.mutils.model.CSVModel;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -29,7 +31,13 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import java.beans.IntrospectionException;
+import java.beans.PropertyDescriptor;
 import java.io.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -436,8 +444,6 @@ public class AppUtils {
             return object;
         } catch (JsonProcessingException e) {
             log.error("Error at toJsonString because " + e.getMessage());
-            e.printStackTrace();
-        } catch (IOException e) {
             e.printStackTrace();
         }
         return null;
@@ -898,6 +904,92 @@ public class AppUtils {
             }
         }
         return sb.toString();
+    }
+
+    public String toCSVText(Object object) {
+        return toCSVText(object, '|');
+    }
+
+    public String toCSVText(Object object, char separator) {
+        StringBuilder builder = new StringBuilder();
+        String result = "";
+        Field[] fields = object.getClass().getDeclaredFields();
+        String formatDate = null;
+        List<CSVModel> models = new ArrayList<>();
+        int order = 0;
+        String fieldName = "";
+        Object fieldValue = null;
+        for (Field field : fields) {
+            fieldName = field.getName();
+            Annotation annotation = field.getAnnotation(CSVField.class);
+            if (annotation != null) {
+                CSVField csvField = (CSVField) annotation;
+                if (csvField.ignore()) continue;
+                fieldName = csvField.value();
+                order = csvField.order();
+                formatDate = csvField.formatDate();
+            }
+            fieldValue = getFieldValue(object, field);
+            if (field.getType().equals(Date.class)) {
+                fieldValue = getFieldDateValue(object, field, formatDate);
+            }
+            models.add(new CSVModel(fieldName, fieldValue, order));
+        }
+
+        models.sort(Comparator.comparing(CSVModel::getFieldOrder));
+        models.forEach(csvModel -> {
+            builder.append(csvModel.getFieldValue());
+            builder.append(separator);
+        });
+        if (builder != null) {
+            result = builder.toString().trim();
+            if (result.endsWith(String.valueOf(separator))) {
+                result = result.substring(0, result.length() - 1);
+            }
+        }
+        return result;
+    }
+
+    private static Boolean isType(Field field, Class classType) {
+        return field.getType().equals(classType);
+    }
+
+    private static Method getGetMethod(Class clazz, Field field) {
+        PropertyDescriptor propertyDescriptor = null;
+        try {
+            propertyDescriptor = new PropertyDescriptor(field.getName(), clazz);
+        } catch (IntrospectionException e) {
+            e.printStackTrace();
+        }
+
+        return propertyDescriptor.getReadMethod();
+    }
+
+    private String getFieldValue(Object object, Field field) {
+//        final String format = isType(field, String.class) ? "%s='%s'" : "%s=%s";
+        StringBuilder stringBuilder = new StringBuilder();
+        Method getMethod = getGetMethod(object.getClass(), field);
+        try {
+            Object fieldValue = getMethod.invoke(object);
+//            stringBuilder = new StringBuilder(String.format(format, field.getName(), fieldValue));
+            stringBuilder = new StringBuilder(String.valueOf(fieldValue));
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace();
+        }
+
+        return stringBuilder.toString();
+    }
+
+    private String getFieldDateValue(Object object, Field field, String formatDate) {
+        Method getMethod = getGetMethod(object.getClass(), field);
+        try {
+            Date fieldValue = (Date) getMethod.invoke(object);
+            return AppUtils.getInstance().formatDate(fieldValue, formatDate);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
 }

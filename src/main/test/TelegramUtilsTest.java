@@ -1,4 +1,4 @@
-package com.github.menglim.mutils;
+import com.github.menglim.mutils.TelegramUtils;
 
 public class TelegramUtilsTest {
 
