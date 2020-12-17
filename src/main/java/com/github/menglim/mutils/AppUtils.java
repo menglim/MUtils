@@ -1079,4 +1079,9 @@ public class AppUtils {
         return name;
     }
 
+    public String toVariableFormat(String normalString) {
+        normalString = normalString.replaceAll("[^a-zA-Z0-9]", "");
+        return normalString;
+    }
+
 }

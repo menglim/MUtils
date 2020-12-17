@@ -3,13 +3,13 @@ import com.github.menglim.mutils.AppUtils;
 public class SSHFileUploaderTest {
 
     public static void main(String[] args) {
-        AppUtils.getInstance().uploadFileViaSSH(
-                "10.10.31.18",
-                "root",
-                "root",
-                "C:\\opt\\TxCBSFileProcessor\\CASA_16122020_145636.csv",
-                "/opt"
-        );
+//        AppUtils.getInstance().uploadFileViaSSH(
+//                "10.10.31.18",
+//                "root",
+//                "root",
+//                "C:\\opt\\TxCBSFileProcessor\\CASA_16122020_145636.csv",
+//                "/opt"
+//        );
 
 //        FileSystemOptions fsOptions = new FileSystemOptions();
 //        SftpFileSystemConfigBuilder.getInstance().setStrictHostKeyChecking(fsOptions, "no");
