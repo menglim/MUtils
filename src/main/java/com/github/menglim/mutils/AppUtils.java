@@ -1095,4 +1095,17 @@ public class AppUtils {
         chArr[0] = Character.toLowerCase(chArr[0]);
         return new String(chArr);
     }
+
+    public List<String> getCountries() {
+        List<String> list = new ArrayList<>();
+        String[] isoCountries = Locale.getISOCountries();
+        for (String country : isoCountries) {
+            Locale locale = new Locale("en", country);
+            String name = locale.getDisplayCountry();
+            if (!name.trim().equals(""))
+                list.add(name.trim());
+        }
+        list.sort(String::compareToIgnoreCase);
+        return list;
+    }
 }
