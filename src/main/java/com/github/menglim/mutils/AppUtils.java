@@ -1004,6 +1004,7 @@ public class AppUtils {
         Method getMethod = getGetMethod(object.getClass(), field);
         try {
             Object fieldValue = getMethod.invoke(object);
+            if (fieldValue == null) return "";
 //            stringBuilder = new StringBuilder(String.format(format, field.getName(), fieldValue));
             stringBuilder = new StringBuilder(String.valueOf(fieldValue));
         } catch (IllegalAccessException | InvocationTargetException e) {
@@ -1085,10 +1086,10 @@ public class AppUtils {
     }
 
     public String firstCharToLowerCase(String str) {
-        if(str == null || str.length() == 0)
+        if (str == null || str.length() == 0)
             return "";
 
-        if(str.length() == 1)
+        if (str.length() == 1)
             return str.toLowerCase();
 
         char[] chArr = str.toCharArray();
@@ -1107,5 +1108,18 @@ public class AppUtils {
         }
         list.sort(String::compareToIgnoreCase);
         return list;
+    }
+
+    public HashMap<String, Object> toHashMap(Object object) {
+        HashMap<String, Object> result = new HashMap<>();
+        Field[] fields = object.getClass().getDeclaredFields();
+        String fieldName = "";
+        Object fieldValue = null;
+        for (Field field : fields) {
+            fieldName = field.getName();
+            fieldValue = getFieldValue(object, field);
+            result.put(fieldName, fieldValue);
+        }
+        return result;
     }
 }
