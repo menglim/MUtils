@@ -6,4 +6,10 @@ public class Constants {
         JSON,
         XML
     }
+
+    public enum FormatDate {
+        DDMMYYYY,
+        MMDDYYYY,
+        YYYYMMDD,
+    }
 }

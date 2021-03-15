@@ -918,6 +918,7 @@ public class AppUtils {
 
     public String toCSVHeader(Object object, char separator) {
         StringBuilder builder = new StringBuilder();
+        StringBuilder header = new StringBuilder();
         String result = "";
         Field[] fields = object.getClass().getDeclaredFields();
         List<CSVModel> models = new ArrayList<>();
@@ -947,6 +948,7 @@ public class AppUtils {
 
     public String toCSVText(Object object, char separator) {
         StringBuilder builder = new StringBuilder();
+        StringBuilder header = new StringBuilder();
         String result = "";
         Field[] fields = object.getClass().getDeclaredFields();
         String formatDate = null;
@@ -1122,4 +1124,104 @@ public class AppUtils {
         }
         return result;
     }
+
+    public String getFirstSpecialSymbol(String value) {
+        if (value == null) return null;
+        if (value.equals("")) return "";
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (containsSpecialCharacter(String.valueOf(c))) {
+                return String.valueOf(c).trim();
+            }
+        }
+        return "";
+    }
+
+    public boolean containsSpecialCharacter(String s) {
+        return (s != null) && s.matches("[^A-Za-z0-9 ]");
+    }
+
+    public String toDate(String value, Constants.FormatDate fromFormatDate, String toFormatDate) {
+        String separator = getFirstSpecialSymbol(value);
+        return toDate(value, fromFormatDate, separator, toFormatDate);
+    }
+
+    public String toDate(String value, Constants.FormatDate fromFormatDate, String fromDateSeparator, String toFormatDate) {
+        if (value == null) return null;
+        if (value.equals("")) return "";
+        String yy = "";
+        String mm = "";
+        String dd = "";
+        switch (fromFormatDate) {
+            case DDMMYYYY:
+                if (nonNull(fromDateSeparator)) {
+                    String[] tmp = value.split(fromDateSeparator);
+                    dd = tmp[0];
+                    mm = tmp[1];
+                    yy = tmp[2];
+                } else {
+                    dd = value.substring(0, 2);
+                    mm = value.substring(2, 4);
+                    yy = value.substring(4, 8);
+                }
+                break;
+            case MMDDYYYY:
+                if (nonNull(fromDateSeparator)) {
+                    String[] tmp = value.split(fromDateSeparator);
+                    dd = tmp[1];
+                    mm = tmp[0];
+                    yy = tmp[2];
+                } else {
+                    mm = value.substring(0, 2);
+                    dd = value.substring(2, 4);
+                    yy = value.substring(4, 8);
+                }
+                break;
+            case YYYYMMDD:
+                if (nonNull(fromDateSeparator)) {
+                    String[] tmp = value.split(fromDateSeparator);
+                    dd = tmp[3];
+                    mm = tmp[1];
+                    yy = tmp[0];
+                } else {
+                    dd = value.substring(6, 8);
+                    mm = value.substring(4, 6);
+                    yy = value.substring(0, 4);
+                }
+                break;
+        }
+
+        if (!isNumeric(dd)) {
+            try {
+                throw new Exception("Invalid DD value should be number => " + dd);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        if (!isNumeric(mm)) {
+            try {
+                throw new Exception("Invalid MM value should be number => " + mm);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        if (!isNumeric(yy)) {
+            try {
+                throw new Exception("Invalid YY value should be number => " + yy);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        LocalDate date = LocalDate.of(Integer.parseInt(yy), Integer.parseInt(mm), Integer.parseInt(dd));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(toFormatDate);
+        return date.format(formatter);
+    }
+
+//    public static void main(String[] args) {
+//        String originalValue = "12/14/2021";
+//        String value = AppUtils.getInstance().toDate(originalValue, Constants.FormatDate.MMDDYYYY, "/", "yyyy-MMM-dd");
+//        System.out.println(originalValue + " => " + value);
+//        System.out.println("=> " + AppUtils.getInstance().getFirstSpecialSymbol(originalValue));
+//    }
 }
