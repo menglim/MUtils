@@ -1180,7 +1180,7 @@ public class AppUtils {
             case YYYYMMDD:
                 if (nonNull(fromDateSeparator)) {
                     String[] tmp = value.split(fromDateSeparator);
-                    dd = tmp[3];
+                    dd = tmp[2];
                     mm = tmp[1];
                     yy = tmp[0];
                 } else {
