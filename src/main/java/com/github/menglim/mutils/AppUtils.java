@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.menglim.mutils.annotation.CSVField;
+import com.github.menglim.mutils.annotation.ExcelField;
 import com.github.menglim.mutils.model.CSVModel;
+import com.github.menglim.mutils.model.ExcelFieldModel;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -15,6 +17,12 @@ import net.schmizz.sshj.sftp.SFTPClient;
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.formula.functions.T;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.w3c.dom.Document;
@@ -988,7 +996,7 @@ public class AppUtils {
         return field.getType().equals(classType);
     }
 
-    private static Method getGetMethod(Class clazz, Field field) {
+    public static Method getGetMethod(Class clazz, Field field) {
         PropertyDescriptor propertyDescriptor = null;
         try {
             propertyDescriptor = new PropertyDescriptor(field.getName(), clazz);
@@ -1000,7 +1008,7 @@ public class AppUtils {
         return propertyDescriptor.getReadMethod();
     }
 
-    private String getFieldValue(Object object, Field field) {
+    public String getFieldValue(Object object, Field field) {
 //        final String format = isType(field, String.class) ? "%s='%s'" : "%s=%s";
         StringBuilder stringBuilder = new StringBuilder();
         Method getMethod = getGetMethod(object.getClass(), field);
@@ -1016,7 +1024,7 @@ public class AppUtils {
         return stringBuilder.toString();
     }
 
-    private String getFieldDateValue(Object object, Field field, String formatDate) {
+    public String getFieldDateValue(Object object, Field field, String formatDate) {
         Method getMethod = getGetMethod(object.getClass(), field);
         try {
             Date fieldValue = (Date) getMethod.invoke(object);
@@ -1224,4 +1232,99 @@ public class AppUtils {
 //        System.out.println(originalValue + " => " + value);
 //        System.out.println("=> " + AppUtils.getInstance().getFirstSpecialSymbol(originalValue));
 //    }
+
+    public ByteArrayInputStream toExcel(List<T> list, String worksheetName) {
+
+        if (list == null) try {
+            throw new Exception("List is null");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        assert list != null;
+        if (list.size() == 0) {
+            try {
+                throw new Exception("List is empty");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        T t = list.get(0);
+
+        if (AppUtils.getInstance().isNull(worksheetName)) {
+            worksheetName = t.getClass().getSimpleName();
+        }
+
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream();) {
+            Sheet sheet = workbook.createSheet(worksheetName);
+            // Header
+
+            int rowIdx = 0;
+
+            Row headerRow = sheet.createRow(0);
+            List<String> headers = getExcelColumnHeader(t);
+
+            for (int col = 0; col < headers.size(); col++) {
+                Cell cell = headerRow.createCell(col);
+                cell.setCellValue(headers.get(col));
+            }
+
+            rowIdx = 1;
+
+            for (T t1 : list) {
+                Row row = sheet.createRow(rowIdx++);
+                Field[] fields = t1.getClass().getDeclaredFields();
+                String formatDate = null;
+                List<ExcelFieldModel> models = new ArrayList<>();
+                int order = 0;
+                String fieldName = "";
+                Object fieldValue = null;
+
+                for (Field field : fields) {
+                    fieldName = field.getName();
+                    ExcelField annotation = field.getAnnotation(ExcelField.class);
+                    if (annotation != null) {
+                        if (annotation.ignore()) continue;
+                        fieldName = annotation.value();
+                        order = annotation.order();
+                        formatDate = annotation.formatDate();
+                    }
+                    fieldValue = getFieldValue(t1, field);
+                    if (field.getType().equals(Date.class)) {
+                        fieldValue = getFieldDateValue(t1, field, formatDate);
+                    }
+                    models.add(new ExcelFieldModel(fieldName, (fieldValue == null ? "" : fieldValue), order));
+                }
+                models.sort(Comparator.comparing(ExcelFieldModel::getFieldOrder));
+                for (int col = 0; col < models.size(); col++) {
+                    Cell cell = row.createCell(col);
+                    cell.setCellValue(String.valueOf(models.get(col).getFieldValue()));
+                }
+            }
+            workbook.write(out);
+            return new ByteArrayInputStream(out.toByteArray());
+        } catch (IOException e) {
+            throw new RuntimeException("fail to import data to Excel file: " + e.getMessage());
+        }
+    }
+
+    public List<String> getExcelColumnHeader(T object) {
+        Field[] fields = object.getClass().getDeclaredFields();
+        List<ExcelFieldModel> models = new ArrayList<>();
+        int order = 0;
+        String fieldName = "";
+        for (Field field : fields) {
+            fieldName = field.getName();
+            ExcelField annotation = field.getAnnotation(ExcelField.class);
+            if (annotation != null) {
+                if (annotation.ignore()) continue;
+                fieldName = annotation.value();
+                order = annotation.order();
+            }
+            models.add(new ExcelFieldModel(fieldName, null, order));
+        }
+        models.sort(Comparator.comparing(ExcelFieldModel::getFieldOrder));
+        List<String> result = models.stream().map(ExcelFieldModel::getFieldName).collect(Collectors.toList());
+        return result;
+    }
 }
