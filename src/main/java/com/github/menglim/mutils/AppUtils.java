@@ -1262,8 +1262,10 @@ public class AppUtils {
             int rowIdx = 0;
 
             Row headerRow = sheet.createRow(0);
-            List<String> headers = getExcelColumnHeader(t);
-
+            List<String> headers = getColumnHeader(t);
+            if (headers.size() == 0) {
+                throw new Exception("No column selected");
+            }
             for (int col = 0; col < headers.size(); col++) {
                 Cell cell = headerRow.createCell(col);
                 cell.setCellValue(headers.get(col));
@@ -1274,7 +1276,7 @@ public class AppUtils {
             for (T t1 : list) {
                 Row row = sheet.createRow(rowIdx++);
                 Field[] fields = t1.getClass().getDeclaredFields();
-                String formatDate = null;
+                String formatDate = "yyyy-MM-dd HH:mm:ss";
                 List<ExcelFieldModel> models = new ArrayList<>();
                 int order = 0;
                 String fieldName = "";
@@ -1283,17 +1285,19 @@ public class AppUtils {
                 for (Field field : fields) {
                     fieldName = field.getName();
                     ExcelField annotation = field.getAnnotation(ExcelField.class);
-                    if (annotation != null) {
+                    if (annotation == null) continue;
+                    else {
                         if (annotation.ignore()) continue;
                         fieldName = annotation.value();
                         order = annotation.order();
                         formatDate = annotation.formatDate();
+                        if (field.getType().equals(Date.class)) {
+                            fieldValue = getFieldDateValue(t1, field, formatDate);
+                        } else {
+                            fieldValue = getFieldValue(t1, field);
+                        }
+                        models.add(new ExcelFieldModel(fieldName, (fieldValue == null ? "" : fieldValue), order));
                     }
-                    fieldValue = getFieldValue(t1, field);
-                    if (field.getType().equals(Date.class)) {
-                        fieldValue = getFieldDateValue(t1, field, formatDate);
-                    }
-                    models.add(new ExcelFieldModel(fieldName, (fieldValue == null ? "" : fieldValue), order));
                 }
                 models.sort(Comparator.comparing(ExcelFieldModel::getFieldOrder));
                 for (int col = 0; col < models.size(); col++) {
@@ -1305,10 +1309,13 @@ public class AppUtils {
             return new ByteArrayInputStream(out.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException("fail to import data to Excel file: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        return null;
     }
 
-    public List<String> getExcelColumnHeader(T object) {
+    public List<String> getColumnHeader(T object) {
         Field[] fields = object.getClass().getDeclaredFields();
         List<ExcelFieldModel> models = new ArrayList<>();
         int order = 0;
@@ -1316,7 +1323,8 @@ public class AppUtils {
         for (Field field : fields) {
             fieldName = field.getName();
             ExcelField annotation = field.getAnnotation(ExcelField.class);
-            if (annotation != null) {
+            if (annotation == null) continue;
+            else {
                 if (annotation.ignore()) continue;
                 fieldName = annotation.value();
                 order = annotation.order();
@@ -1327,4 +1335,110 @@ public class AppUtils {
         List<String> result = models.stream().map(ExcelFieldModel::getFieldName).collect(Collectors.toList());
         return result;
     }
+
+    private final String[] units = {
+            "", "One", "Two", "Three", "Four", "Five", "Six", "Seven",
+            "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen",
+            "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"
+    };
+
+    private final String[] tens = {
+            "",        // 0
+            "",        // 1
+            "Twenty",  // 2
+            "Thirty",  // 3
+            "Forty",   // 4
+            "Fifty",   // 5
+            "Sixty",   // 6
+            "Seventy", // 7
+            "Eighty",  // 8
+            "Ninety"   // 9
+    };
+
+    public String toWord(Long n) {
+        if (n < 0) {
+            return "minus " + toWord(-n);
+        }
+        if (n < 20) {
+            return units[Math.toIntExact(n)];
+        }
+        if (n < 100) {
+            return tens[Math.toIntExact(n / 10)] + ((n % 10 != 0) ? " " : "") + units[Math.toIntExact(n % 10)];
+        }
+        if (n < 1000) {
+            return units[Math.toIntExact(n / 100)] + " Hundred" + ((n % 100 != 0) ? " " : "") + toWord(n % 100);
+        }
+        if (n < 1000000) {
+            return toWord(n / 1000) + " Thousand" + ((n % 1000 != 0) ? " " : "") + toWord(n % 1000);
+        }
+        if (n < 1000000000) {
+            return toWord(n / 1000000) + " Million" + ((n % 1000000 != 0) ? " " : "") + toWord(n % 1000000);
+        }
+        return toWord(n / 1000000000) + " Billion" + ((n % 1000000000 != 0) ? " " : "") + toWord(n % 1000000000);
+    }
+
+    public String amountToWord(Double n) {
+        String amountInString = n.toString();
+        String part1 = "";
+        String part2 = "";
+
+        String dollas = " Dollar";
+        String cents = " Cent";
+
+        if (amountInString.contains(".")) {
+            String[] tmp = amountInString.split("\\.");
+            part1 = tmp[0];
+            part2 = tmp[1];
+        }
+        if (Long.parseLong(part1) > 1) {
+            dollas = " Dollars";
+        }
+        if (Long.parseLong(part2) > 1) {
+            cents = " Cents";
+        }
+
+        part1 = toWord(Long.parseLong(part1));
+        part2 = toWord(Long.parseLong(part2));
+
+        return part1 + dollas + " and " + part2 + cents;
+    }
+
+    public String find(String[] array, String find, String defaultValue) {
+        for (String a :
+                array) {
+            if (a.contentEquals(find)) {
+                return a;
+            }
+        }
+        return defaultValue;
+    }
+
+    public String find(String[] array, String find) {
+        return this.find(array, find, null);
+    }
+
+    public int findIndex(String[] array, String find) {
+        for (int i = 0; i < array.length; i++) {
+            if (array[i].contentEquals(find)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public String getAccountFormat(String accountNo, String separator) {
+        if (accountNo == null) return null;
+        if (accountNo.length() == 15)
+            return StringUtils.isNotEmpty(accountNo) ?
+                    accountNo.substring(0, 5).concat(separator)
+                            .concat(accountNo.substring(5, 7)).concat(separator)
+                            .concat(accountNo.substring(7, 13)).concat(separator).concat(accountNo.substring(13, 15))
+                    : null;
+        return accountNo;
+    }
+
+    public String getAccountFormat(String accountNo) {
+        return getAccountFormat(accountNo, StringUtils.SPACE);
+    }
+
 }
