@@ -28,6 +28,8 @@ import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.w3c.dom.ls.DOMImplementationLS;
+import org.w3c.dom.ls.LSSerializer;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -574,6 +576,7 @@ public class AppUtils {
             if (node != null) {
                 return node.getTextContent();
             }
+            log.error(path + " not found");
             return null;
         } catch (ParserConfigurationException e) {
             e.printStackTrace();
@@ -597,7 +600,14 @@ public class AppUtils {
             doc.normalize();
             XPath xPath = XPathFactory.newInstance().newXPath();
             Node node = (Node) xPath.compile(path).evaluate(doc, XPathConstants.NODE);
-            if (node == null) return null;
+            if (node == null) {
+                log.error(path + " not found");
+                return null;
+            }
+            if (node.getAttributes().getNamedItem(attributeKey) == null) {
+                log.error("AttributeKey " + attributeKey + " not found");
+                return null;
+            }
             return node.getAttributes().getNamedItem(attributeKey).getTextContent();
         } catch (ParserConfigurationException e) {
             e.printStackTrace();
@@ -1441,4 +1451,23 @@ public class AppUtils {
         return getAccountFormat(accountNo, StringUtils.SPACE);
     }
 
+
+    public String innerXml(Node node, boolean includeSelf) {
+        DOMImplementationLS lsImpl = (DOMImplementationLS) node.getOwnerDocument().getImplementation().getFeature("LS", "3.0");
+        LSSerializer lsSerializer = lsImpl.createLSSerializer();
+
+        if (includeSelf) {
+            lsSerializer.getDomConfig().setParameter("xml-declaration", false);
+            StringBuilder sb = new StringBuilder();
+            sb.append(lsSerializer.writeToString(node));
+            return sb.toString();
+        } else {
+            NodeList childNodes = node.getChildNodes();
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < childNodes.getLength(); i++) {
+                sb.append(lsSerializer.writeToString(childNodes.item(i)));
+            }
+            return sb.toString();
+        }
+    }
 }
