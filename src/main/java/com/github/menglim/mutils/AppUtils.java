@@ -1444,6 +1444,13 @@ public class AppUtils {
                             .concat(accountNo.substring(5, 7)).concat(separator)
                             .concat(accountNo.substring(7, 13)).concat(separator).concat(accountNo.substring(13, 15))
                     : null;
+        if (accountNo.length() == 9) {
+            return StringUtils.isNotEmpty(accountNo) ?
+                    accountNo.substring(0, 3).concat(separator)
+                            .concat(accountNo.substring(3, 6)).concat(separator)
+                            .concat(accountNo.substring(6, 9))
+                    : null;
+        }
         return accountNo;
     }
 
