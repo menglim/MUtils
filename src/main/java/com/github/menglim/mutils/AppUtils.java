@@ -17,7 +17,6 @@ import net.schmizz.sshj.sftp.SFTPClient;
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -1243,7 +1242,7 @@ public class AppUtils {
 //        System.out.println("=> " + AppUtils.getInstance().getFirstSpecialSymbol(originalValue));
 //    }
 
-    public ByteArrayInputStream toExcel(List<T> list, String worksheetName) {
+    public <R> byte[] toExcel(List<R> list, String worksheetName) {
 
         if (list == null) try {
             throw new Exception("List is null");
@@ -1259,10 +1258,10 @@ public class AppUtils {
             }
         }
 
-        T t = list.get(0);
+        R r = list.get(0);
 
         if (AppUtils.getInstance().isNull(worksheetName)) {
-            worksheetName = t.getClass().getSimpleName();
+            worksheetName = r.getClass().getSimpleName();
         }
 
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream();) {
@@ -1272,7 +1271,7 @@ public class AppUtils {
             int rowIdx = 0;
 
             Row headerRow = sheet.createRow(0);
-            List<String> headers = getColumnHeader(t);
+            List<String> headers = getColumnHeader(r);
             if (headers.size() == 0) {
                 throw new Exception("No column selected");
             }
@@ -1283,7 +1282,7 @@ public class AppUtils {
 
             rowIdx = 1;
 
-            for (T t1 : list) {
+            for (R t1 : list) {
                 Row row = sheet.createRow(rowIdx++);
                 Field[] fields = t1.getClass().getDeclaredFields();
                 String formatDate = "yyyy-MM-dd HH:mm:ss";
@@ -1316,7 +1315,7 @@ public class AppUtils {
                 }
             }
             workbook.write(out);
-            return new ByteArrayInputStream(out.toByteArray());
+            return out.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException("fail to import data to Excel file: " + e.getMessage());
         } catch (Exception e) {
@@ -1325,7 +1324,7 @@ public class AppUtils {
         return null;
     }
 
-    public List<String> getColumnHeader(T object) {
+    public List<String> getColumnHeader(Object object) {
         Field[] fields = object.getClass().getDeclaredFields();
         List<ExcelFieldModel> models = new ArrayList<>();
         int order = 0;
