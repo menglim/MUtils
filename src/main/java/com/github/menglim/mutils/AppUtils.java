@@ -1476,4 +1476,8 @@ public class AppUtils {
             return sb.toString();
         }
     }
+
+    public String getTimeAgoBtw2Date(Date fromDate, Date toDate, int level, boolean abb) {
+        return TimeAgo.toRelative(fromDate, toDate, level, abb);
+    }
 }
