@@ -11,6 +11,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.schmizz.sshj.SSHClient;
 import net.schmizz.sshj.sftp.SFTPClient;
@@ -50,7 +51,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.text.DecimalFormat;
@@ -1474,6 +1477,47 @@ public class AppUtils {
                 sb.append(lsSerializer.writeToString(childNodes.item(i)));
             }
             return sb.toString();
+        }
+    }
+
+    public String getHostIP() {
+        InetAddress ip;
+        try {
+            ip = InetAddress.getLocalHost();
+            return ip.toString();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    public String getHostname() {
+        InetAddress ip;
+        try {
+            ip = InetAddress.getLocalHost();
+            return ip.getHostName();
+
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    public String contact(@NonNull String... values) {
+        return concatWithSeparator(" - ", values);
+    }
+
+    public String concatWithSeparator(String separator, @NonNull String... values) {
+        String result = "";
+        for (String value : values) {
+            if (AppUtils.getInstance().nonNull(value)) {
+                result = result + value + separator;
+            }
+        }
+        if (AppUtils.getInstance().nonNull(separator)) {
+            return result.substring(0, result.length() - separator.length());
+        } else {
+            return result;
         }
     }
 
