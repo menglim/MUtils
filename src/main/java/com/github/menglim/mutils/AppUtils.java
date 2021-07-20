@@ -1,6 +1,7 @@
 package com.github.menglim.mutils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.menglim.mutils.annotation.CSVField;
@@ -65,6 +66,7 @@ import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -1484,7 +1486,12 @@ public class AppUtils {
         InetAddress ip;
         try {
             ip = InetAddress.getLocalHost();
-            return ip.toString();
+            String value = ip.toString();
+            if (value.contains("/")) {
+                String[] tmp = value.split("/");
+                return tmp[1];
+            }
+            return value;
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
@@ -1524,4 +1531,45 @@ public class AppUtils {
     public String getTimeAgoBtw2Date(Date fromDate, Date toDate, int level, boolean abb) {
         return TimeAgo.toRelative(fromDate, toDate, level, abb);
     }
+
+    public String incrementString(String string) {
+        if (string.length() == 1) {
+            if (string.equals("z"))
+                return "a1";
+            else if (string.equals("Z"))
+                return "a1";
+            else {
+                String nextValue = (char) (string.charAt(0) + 1) + "";
+                while (containsSpecialCharacter(nextValue)) {
+                    nextValue = (char) (nextValue.charAt(0) + 1) + "";
+                }
+                return nextValue;
+            }
+        }
+        if (string.charAt(string.length() - 1) != 'z') {
+            String nextValue = (char) (string.charAt(string.length() - 1) + 1) + "";
+            while (containsSpecialCharacter(nextValue)) {
+                nextValue = (char) (nextValue.charAt(0) + 1) + "";
+            }
+            return string.substring(0, string.length() - 1) + nextValue;
+        }
+        return incrementString(string.substring(0, string.length() - 1)) + "1";
+    }
+
+
+    public Object toObject(String jsonData, TypeReference reference) {
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            Object object = mapper.readValue(jsonData, reference);
+            return object;
+        } catch (JsonProcessingException var6) {
+            var6.printStackTrace();
+            return null;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }
