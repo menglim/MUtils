@@ -66,7 +66,6 @@ import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -1063,6 +1062,7 @@ public class AppUtils {
                 }
                 try {
                     sftpClient.put(localFilename, remoteDirectory + "/" + getFileName(localFilename));
+                    log.debug(localFilename + " uploaded successfully");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
