@@ -866,7 +866,7 @@ public class AppUtils {
         return Date.from(endOfDay.atZone(ZoneId.systemDefault()).toInstant());
     }
 
-    public InputStream post(String url, Constants.ContentType contentType, String body) throws Exception {
+    public InputStream post(String url, CoreConstants.ContentType contentType, String body) throws Exception {
         try {
             log.info(body);
             URL urlConnection = new URL(url);
@@ -1163,12 +1163,12 @@ public class AppUtils {
         return (s != null) && s.matches("[^A-Za-z0-9 ]");
     }
 
-    public String toDate(String value, Constants.FormatDate fromFormatDate, String toFormatDate) {
+    public String toDate(String value, CoreConstants.FormatDate fromFormatDate, String toFormatDate) {
         String separator = getFirstSpecialSymbol(value);
         return toDate(value, fromFormatDate, separator, toFormatDate);
     }
 
-    public String toDate(String value, Constants.FormatDate fromFormatDate, String fromDateSeparator, String toFormatDate) {
+    public String toDate(String value, CoreConstants.FormatDate fromFormatDate, String fromDateSeparator, String toFormatDate) {
         if (value == null) return null;
         if (value.equals("")) return "";
         String yy = "";
@@ -1532,7 +1532,7 @@ public class AppUtils {
         return TimeAgo.toRelative(fromDate, toDate, level, abb);
     }
 
-    public String incrementString(String string) {
+    public String nextString(String string) {
         if (string.length() == 1) {
             if (string.equals("z"))
                 return "a1";
@@ -1540,7 +1540,7 @@ public class AppUtils {
                 return "a1";
             else {
                 String nextValue = (char) (string.charAt(0) + 1) + "";
-                while (containsSpecialCharacter(nextValue)) {
+                while (AppUtils.getInstance().containsSpecialCharacter(nextValue)) {
                     nextValue = (char) (nextValue.charAt(0) + 1) + "";
                 }
                 return nextValue;
@@ -1548,12 +1548,43 @@ public class AppUtils {
         }
         if (string.charAt(string.length() - 1) != 'z') {
             String nextValue = (char) (string.charAt(string.length() - 1) + 1) + "";
-            while (containsSpecialCharacter(nextValue)) {
+            while (AppUtils.getInstance().containsSpecialCharacter(nextValue)) {
                 nextValue = (char) (nextValue.charAt(0) + 1) + "";
             }
             return string.substring(0, string.length() - 1) + nextValue;
         }
-        return incrementString(string.substring(0, string.length() - 1)) + "1";
+        return nextString(string.substring(0, string.length() - 1)) + "1";
+    }
+
+    private boolean containsSpecialCharacterForNextString(String s) {
+        if (AppUtils.getInstance().isNull(s)) {
+            return true;
+        }
+        return s != null && s.matches("[^A-Z1-9 ]");
+    }
+
+    public String nextStringCapitalOnly(String string) {
+        if (string.length() == 1) {
+            if (string.equals("z"))
+                return "A1";
+            else if (string.equals("Z"))
+                return "A1";
+            else {
+                String nextValue = (char) (string.charAt(0) + 1) + "";
+                while (containsSpecialCharacterForNextString(nextValue)) {
+                    nextValue = (char) (nextValue.charAt(0) + 1) + "";
+                }
+                return nextValue;
+            }
+        }
+        if (string.charAt(string.length() - 1) != 'Z') {
+            String nextValue = (char) (string.charAt(string.length() - 1) + 1) + "";
+            while (containsSpecialCharacterForNextString(nextValue)) {
+                nextValue = (char) (nextValue.charAt(0) + 1) + "";
+            }
+            return string.substring(0, string.length() - 1) + nextValue;
+        }
+        return nextStringCapitalOnly(string.substring(0, string.length() - 1)) + "1";
     }
 
 
@@ -1566,10 +1597,7 @@ public class AppUtils {
         } catch (JsonProcessingException var6) {
             var6.printStackTrace();
             return null;
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-        return null;
     }
 
 }

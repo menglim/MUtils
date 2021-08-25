@@ -32,7 +32,7 @@ public class TelegramUtils {
             url = url.replace("{bot_token}", botToken);
 
             InputStream inputStream = null;
-            inputStream = AppUtils.getInstance().post(url, Constants.ContentType.JSON, AppUtils.getInstance().toJsonString(sendMessage));
+            inputStream = AppUtils.getInstance().post(url, CoreConstants.ContentType.JSON, AppUtils.getInstance().toJsonString(sendMessage));
 
             String responseString = AppUtils.getInstance().convertStreamToString(inputStream);
             SendMessageResponse response = (SendMessageResponse) AppUtils.getInstance().toObject(responseString, SendMessageResponse.class);
