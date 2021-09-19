@@ -12,6 +12,18 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.hierynomus.msdtyp.AccessMask;
+import com.hierynomus.msfscc.FileAttributes;
+import com.hierynomus.mssmb2.SMB2CreateDisposition;
+import com.hierynomus.mssmb2.SMB2CreateOptions;
+import com.hierynomus.mssmb2.SMB2ShareAccess;
+import com.hierynomus.security.bc.BCSecurityProvider;
+import com.hierynomus.smbj.SMBClient;
+import com.hierynomus.smbj.SmbConfig;
+import com.hierynomus.smbj.auth.AuthenticationContext;
+import com.hierynomus.smbj.connection.Connection;
+import com.hierynomus.smbj.session.Session;
+import com.hierynomus.smbj.share.DiskShare;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.schmizz.sshj.SSHClient;
@@ -56,6 +68,8 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.text.DecimalFormat;
 import java.text.ParseException;
@@ -1598,6 +1612,165 @@ public class AppUtils {
             var6.printStackTrace();
             return null;
         }
+    }
+
+    public String splitGetAtFirst(String value, String separator) {
+        String[] tmp = StringUtils.split(value, separator);
+        if (tmp.length > 0) {
+            return tmp[0];
+        }
+        return value;
+    }
+
+    public void copyFolderToSmbFolder(String localFolder, String host, String username, String domainName, String password, String remoteNetworkPath) {
+        SmbConfig cfg = SmbConfig.builder().
+                withMultiProtocolNegotiate(true).
+                withSecurityProvider(new BCSecurityProvider()).
+                build();
+        SMBClient client = new SMBClient(cfg);
+
+        try (Connection connection = client.connect(host)) {
+            log.info("connected SMB Host " + host);
+            AuthenticationContext ac = new AuthenticationContext(username, password.toCharArray(), domainName);
+            Session session = connection.authenticate(ac);
+            log.info("SMB is authenticated");
+            remoteNetworkPath = StringUtils.replace(remoteNetworkPath, "/", File.separator);
+            remoteNetworkPath = StringUtils.replace(remoteNetworkPath, "\\", File.separator);
+            String shareDisk = splitGetAtFirst(remoteNetworkPath, File.separator);
+            log.info("ShareDisk Name => " + shareDisk);
+            try (DiskShare share = (DiskShare) session.connectShare(shareDisk)) {
+                String remoteDirectory = remoteNetworkPath.substring(shareDisk.length());
+                String[] subFolders = StringUtils.split(remoteDirectory, File.separator);
+                remoteDirectory = "";
+                for (String aSubFolder : subFolders) {
+                    remoteDirectory = remoteDirectory + aSubFolder;
+                    if (AppUtils.getInstance().nonNull(remoteDirectory)) {
+                        if (!share.folderExists(remoteDirectory)) {
+                            share.mkdir(remoteDirectory);
+                        }
+                        remoteDirectory = remoteDirectory + File.separator;
+                    }
+                }
+
+                List<File> files = listFiles(localFolder);
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        remoteDirectory = remoteNetworkPath.substring(shareDisk.length());
+                        String subFoldersToBeCreated = file.getAbsolutePath().substring(localFolder.length());
+                        if (!share.folderExists(remoteDirectory + File.separator + subFoldersToBeCreated)) {
+                            share.mkdir(remoteDirectory + File.separator + subFoldersToBeCreated);
+                        }
+                    } else {
+                        remoteDirectory = remoteNetworkPath.substring(shareDisk.length()) + File.separator + file.getAbsolutePath().substring(localFolder.length() + 1);
+                        remoteDirectory = StringUtils.replace(remoteDirectory, "/", File.separator);
+                        remoteDirectory = StringUtils.replace(remoteDirectory, "\\", File.separator);
+                        com.hierynomus.smbj.share.File output = null;
+                        if (!share.fileExists(remoteDirectory)) {
+                            output = share.openFile(remoteDirectory,
+                                    new HashSet<>(Arrays.asList(AccessMask.MAXIMUM_ALLOWED)),
+                                    new HashSet<>(Arrays.asList(FileAttributes.FILE_ATTRIBUTE_SYSTEM, FileAttributes.FILE_ATTRIBUTE_NORMAL)),
+                                    SMB2ShareAccess.ALL,
+                                    SMB2CreateDisposition.FILE_CREATE,
+                                    new HashSet<>(Arrays.asList(SMB2CreateOptions.FILE_DIRECTORY_FILE)));
+                            OutputStream os = output.getOutputStream();
+                            os.write(Files.readAllBytes(Paths.get(file.getAbsolutePath())));
+                            os.flush();
+                            os.close();
+                            output.close();
+
+                            log.info(file.getName() + " has been uploaded to " + remoteDirectory);
+                        } else {
+                            log.info(file.getName() + " already existed in " + remoteDirectory);
+                        }
+                    }
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public boolean uploadFileViaSmb(String host, String username, String domainName, String password, String remoteNetworkPath, String... localFullPathFileNames) {
+        boolean result = false;
+        SmbConfig cfg = SmbConfig.builder().
+                withMultiProtocolNegotiate(true).
+                withSecurityProvider(new BCSecurityProvider()).
+                build();
+        SMBClient client = new SMBClient(cfg);
+
+        try (Connection connection = client.connect(host)) {
+            log.info("connected SMB Host " + host);
+            AuthenticationContext ac = new AuthenticationContext(username, password.toCharArray(), domainName);
+            Session session = connection.authenticate(ac);
+            log.info("Authenticated");
+            remoteNetworkPath = StringUtils.replace(remoteNetworkPath, "/", File.separator);
+            remoteNetworkPath = StringUtils.replace(remoteNetworkPath, "\\", File.separator);
+            String shareDisk = splitGetAtFirst(remoteNetworkPath, File.separator);
+            log.info("ShareDisk Name => " + shareDisk);
+            try (DiskShare share = (DiskShare) session.connectShare(shareDisk)) {
+                String remoteDirectory = StringUtils.replaceOnce(remoteNetworkPath, shareDisk, "");
+                String[] subFolders = StringUtils.split(remoteDirectory, File.separator);
+                remoteDirectory = "";
+                for (String aSubFolder : subFolders) {
+                    if (AppUtils.getInstance().nonNull(aSubFolder)) {
+                        remoteDirectory = remoteDirectory + File.separator + aSubFolder;
+                        boolean folderExisted = share.folderExists(remoteDirectory);
+                        log.info("RemoteDirectory " + remoteDirectory + " existed " + folderExisted);
+                        if (!folderExisted) {
+                            share.mkdir(remoteDirectory);
+                            log.info(remoteDirectory + " is created");
+                        }
+                    }
+                }
+                for (String localFullPathFileName : localFullPathFileNames) {
+                    File fileToBeUpload = new File(localFullPathFileName);
+                    com.hierynomus.smbj.share.File output = null;
+                    if (fileToBeUpload != null) {
+                        if (!share.fileExists(remoteDirectory + File.separator + fileToBeUpload.getName())) {
+                            output = share.openFile(remoteDirectory + File.separator + fileToBeUpload.getName(),
+                                    new HashSet<>(Arrays.asList(AccessMask.MAXIMUM_ALLOWED)),
+                                    new HashSet<>(Arrays.asList(FileAttributes.FILE_ATTRIBUTE_SYSTEM, FileAttributes.FILE_ATTRIBUTE_NORMAL)),
+                                    SMB2ShareAccess.ALL,
+                                    SMB2CreateDisposition.FILE_CREATE,
+                                    new HashSet<>(Arrays.asList(SMB2CreateOptions.FILE_DIRECTORY_FILE)));
+                            OutputStream os = output.getOutputStream();
+                            os.write(Files.readAllBytes(Paths.get(localFullPathFileName)));
+                            os.flush();
+                            os.close();
+                            output.close();
+                            log.info(fileToBeUpload.getName() + " has been uploaded to " + remoteNetworkPath);
+                            result = true;
+                        } else {
+                            log.info(fileToBeUpload.getName() + " already existed in " + remoteNetworkPath);
+                        }
+                    } else {
+                        log.error(localFullPathFileName + " does not exist");
+                    }
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    public List<File> listFiles(String directoryName) {
+        File directory = new File(directoryName);
+        // get all the files from a directory
+        File[] fList = directory.listFiles();
+        assert fList != null;
+        List<File> resultList = new ArrayList<>(Arrays.asList(fList));
+        for (File file : fList) {
+            if (file.isFile()) {
+                //System.out.println(file.getAbsolutePath());
+            } else if (file.isDirectory()) {
+                resultList.addAll(listFiles(file.getAbsolutePath()));
+            }
+        }
+        //System.out.println(fList);
+        return resultList;
     }
 
 }
