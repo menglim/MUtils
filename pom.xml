@@ -178,6 +178,11 @@
             <scope>compile</scope>
         </dependency>
         <!--      END For SSHJ-->
+        <dependency>
+            <groupId>com.hierynomus</groupId>
+            <artifactId>smbj</artifactId>
+            <version>0.11.1</version>
+        </dependency>
 
     </dependencies>
 
