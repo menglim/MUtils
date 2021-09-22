@@ -6,7 +6,7 @@
 
     <groupId>com.github.menglim</groupId>
     <artifactId>mutils</artifactId>
-    <version>1.2.25</version>
+    <version>1.2.26</version>
     <packaging>jar</packaging>
     <name>${project.artifactId}</name>
     <description>Collection of Utils</description>
@@ -177,6 +177,7 @@
             <version>0.3.0</version>
             <scope>compile</scope>
         </dependency>
+
         <!--      END For SSHJ-->
         <dependency>
             <groupId>com.hierynomus</groupId>
