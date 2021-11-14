@@ -1068,6 +1068,7 @@ public class AppUtils {
         return null;
     }
 
+    //Pending Testing Update library sshj-0.27.0 to 0.31.0
     public boolean uploadFileViaSSH(String host, String username, String password, HashMap<String, String> files) {
         try {
             SSHClient client = new SSHClient();
@@ -1081,7 +1082,7 @@ public class AppUtils {
                 }
                 try {
                     sftpClient.put(localFilename, remoteDirectory + "/" + getFileName(localFilename));
-                    log.debug(localFilename + " uploaded successfully");
+                    log.info(localFilename + " uploaded successfully");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -1258,13 +1259,6 @@ public class AppUtils {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(toFormatDate);
         return date.format(formatter);
     }
-
-//    public static void main(String[] args) {
-//        String originalValue = "12/14/2021";
-//        String value = AppUtils.getInstance().toDate(originalValue, Constants.FormatDate.MMDDYYYY, "/", "yyyy-MMM-dd");
-//        System.out.println(originalValue + " => " + value);
-//        System.out.println("=> " + AppUtils.getInstance().getFirstSpecialSymbol(originalValue));
-//    }
 
     public <R> byte[] toExcel(List<R> list, String worksheetName) {
 
@@ -1753,8 +1747,8 @@ public class AppUtils {
     }
 
     public String encrypt(String plainText, String keyPhrase) throws Exception {
-        if(keyPhrase.length()!=16){
-            throw new  Exception("Key must be in 16 digits");
+        if (keyPhrase.length() != 16) {
+            throw new Exception("Key must be in 16 digits");
         }
         try {
             Key aesKey = new SecretKeySpec(keyPhrase.getBytes(), "AES");
@@ -1780,6 +1774,14 @@ public class AppUtils {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public String splitGetAtFirst(String value, String separator) {
+        String[] tmp = StringUtils.split(value, separator);
+        if (tmp.length > 0) {
+            return tmp[0];
+        }
+        return value;
     }
 
     public String getAccountNoFormat(String accountNo) {
