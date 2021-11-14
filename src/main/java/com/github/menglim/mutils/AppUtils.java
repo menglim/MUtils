@@ -887,7 +887,7 @@ public class AppUtils {
 
     public InputStream post(String url, CoreConstants.ContentType contentType, String body) throws Exception {
         try {
-            log.info(body);
+            //log.info(body);
             URL urlConnection = new URL(url);
             HttpsURLConnection conn = (HttpsURLConnection) urlConnection.openConnection();
             // set required headers
@@ -1896,14 +1896,6 @@ public class AppUtils {
         String[] tmp = StringUtils.split(value, separator);
         if (tmp.length > 0) {
             return tmp[tmp.length - 1];
-        }
-        return value;
-    }
-
-    public String splitGetAtFirst(String value, String separator) {
-        String[] tmp = StringUtils.split(value, separator);
-        if (tmp.length > 0) {
-            return tmp[0];
         }
         return value;
     }
