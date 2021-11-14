@@ -65,6 +65,7 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URL;
@@ -85,6 +86,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 public class AppUtils {
@@ -1527,24 +1529,6 @@ public class AppUtils {
         return "";
     }
 
-    public String contact(@NonNull String... values) {
-        return concatWithSeparator(" - ", values);
-    }
-
-    public String concatWithSeparator(String separator, @NonNull String... values) {
-        String result = "";
-        for (String value : values) {
-            if (AppUtils.getInstance().nonNull(value)) {
-                result = result + value + separator;
-            }
-        }
-        if (AppUtils.getInstance().nonNull(separator)) {
-            return result.substring(0, result.length() - separator.length());
-        } else {
-            return result;
-        }
-    }
-
     public String getTimeAgoBtw2Date(Date fromDate, Date toDate, int level, boolean abb) {
         return TimeAgo.toRelative(fromDate, toDate, level, abb);
     }
@@ -1615,14 +1599,6 @@ public class AppUtils {
             var6.printStackTrace();
             return null;
         }
-    }
-
-    public String splitGetAtFirst(String value, String separator) {
-        String[] tmp = StringUtils.split(value, separator);
-        if (tmp.length > 0) {
-            return tmp[0];
-        }
-        return value;
     }
 
     public void copyFolderToSmbFolder(String localFolder, String host, String username, String domainName, String password, String remoteNetworkPath) {
@@ -1806,4 +1782,189 @@ public class AppUtils {
         }
     }
 
+    public String getAccountNoFormat(String accountNo) {
+        return StringUtils.isNotEmpty(accountNo) ? accountNo.substring(0, 5) + " "
+                + accountNo.substring(5, 7) + " "
+                + accountNo.substring(7, 13) + " "
+                + accountNo.substring(13, 15) : null;
+    }
+
+    public List<String> getListOfString(String key, String value) {
+        if (AppUtils.getInstance().nonNull(value)) {
+            if (value.contains(",")) {
+                List<String> result = Stream.of(value.split(",", -1))
+                        .collect(Collectors.toList());
+                return result;
+            }
+            return Collections.singletonList(value);
+        }
+        return new ArrayList<>();
+    }
+
+    public double roundKHRAmount(long khrAmount) {
+        int last2Digit = getLast2Digit(khrAmount);
+        if (last2Digit >= 50) {
+            return khrAmount + (100 - last2Digit);
+        }
+        return khrAmount - last2Digit;
+    }
+
+    public String contact(@NonNull String... values) {
+        return concatWithSeparator(" - ", values);
+    }
+
+    public String concatWithSeparator(String separator, @NonNull String... values) {
+        String result = "";
+        for (String value : values) {
+            if (AppUtils.getInstance().nonNull(value)) {
+                result = result + value + separator;
+            }
+        }
+        if (AppUtils.getInstance().nonNull(separator)) {
+            if (result.length() > separator.length()) {
+                return result.substring(0, result.length() - separator.length());
+            }
+            return result;
+        } else {
+            return result;
+        }
+    }
+
+    public Date toDate(int year, int month, int day, int hour, int minute, int second) {
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.YEAR, year);
+        cal.set(Calendar.MONTH, month);
+        cal.set(Calendar.DAY_OF_MONTH, day);
+        cal.set(Calendar.HOUR_OF_DAY, hour);
+        cal.set(Calendar.MINUTE, minute);
+        cal.set(Calendar.SECOND, second);
+        cal.set(Calendar.MILLISECOND, 0);
+        Date date = cal.getTime();
+        return date;
+    }
+
+    public Date toDate(int year, int month, int day, int hour, int minute) {
+        return toDate(year, month, day, hour, minute, 0);
+    }
+
+    public Date toDate(int year, int month, int day, int hour) {
+        return toDate(year, month, day, hour, 0, 0);
+    }
+
+    public Date toDate(int year, int month, int day) {
+        return toDate(year, month, day, 0, 0, 0);
+    }
+
+    private int getLast2Digit(long amount) {
+        String doubleAsString = String.valueOf(amount);
+        if (doubleAsString.contains(".")) {
+            doubleAsString = doubleAsString.split("\\.")[0];
+        }
+        if (doubleAsString.length() >= 2) {
+            doubleAsString = StringUtils.right(doubleAsString, 2);
+        }
+        return Integer.parseInt(doubleAsString);
+    }
+
+    public BigDecimal toDecimal(String value) {
+        if (AppUtils.getInstance().isNull(value)) return BigDecimal.ZERO;
+        BigDecimal bigDecimal = new BigDecimal(value);
+        return toDecimal(bigDecimal);
+    }
+
+    public BigDecimal toDecimal(BigDecimal value) {
+        return value.setScale(2, BigDecimal.ROUND_HALF_UP);
+    }
+
+    public BigDecimal toDecimal(Double value) {
+        BigDecimal bigDecimal = BigDecimal.valueOf(value);
+        return toDecimal(bigDecimal);
+    }
+
+    public String formatCurrency(BigDecimal value, String format) {
+        DecimalFormat decimalFormat = new DecimalFormat(format);
+        return decimalFormat.format(value);
+    }
+
+    public String formatCurrency(BigDecimal value) {
+        return formatCurrency(value, "###0.00");
+    }
+
+    public String splitGetAtEnd(String value, String separator) {
+        String[] tmp = StringUtils.split(value, separator);
+        if (tmp.length > 0) {
+            return tmp[tmp.length - 1];
+        }
+        return value;
+    }
+
+    public String splitGetAtFirst(String value, String separator) {
+        String[] tmp = StringUtils.split(value, separator);
+        if (tmp.length > 0) {
+            return tmp[0];
+        }
+        return value;
+    }
+
+    public String toFastAmount(String currency, BigDecimal value) {
+        if (currency.equalsIgnoreCase("KHR")) {
+            if (value.toString().contains(".")) {
+                return StringUtils.split(value.toString(), ".")[0];
+            }
+            return formatCurrency(value,"0");
+        } else {
+            if (value.toString().contains(".")) {
+                long lastDecimalValue = Long.parseLong(splitGetAtEnd(value.toString(), "."));
+                if (lastDecimalValue == 0) {
+                    return formatCurrency(value, "0");
+                } else if (lastDecimalValue < 10) {
+                    return formatCurrency(value, "0.0");
+                } else {
+                    formatCurrency(value, "0.00");
+                }
+            }
+            return formatCurrency(value, "0.00");
+        }
+    }
+
+    public String sql(String... values) {
+        StringBuilder result = new StringBuilder();
+        for (Object value : values) {
+            result.append(sqlString(String.valueOf(value)));
+            result.append(",");
+        }
+        if (result.toString().endsWith(",")) {
+            return result.substring(0, result.length() - 1);
+        }
+        return result.toString();
+    }
+
+    public String sqlNumber(String... values) {
+        StringBuilder result = new StringBuilder();
+        for (Object value : values) {
+            result.append(value);
+            result.append(",");
+        }
+        if (result.toString().endsWith(",")) {
+            return result.substring(0, result.length() - 1);
+        }
+        return result.toString();
+    }
+
+    public String sql(Object... values) {
+        StringBuilder result = new StringBuilder();
+        for (Object value : values) {
+            Class clazz = value.getClass();
+            if (clazz == Integer.class || clazz == Double.class || clazz == Float.class) {
+                result.append(value);
+            } else if (clazz == String.class) {
+                result.append(sqlString(String.valueOf(value)));
+            }
+            result.append(",");
+        }
+        if (result.toString().endsWith(",")) {
+            return result.substring(0, result.length() - 1);
+        }
+        return result.toString();
+    }
 }
