@@ -1,9 +1,11 @@
 package com.github.menglim.mutils.telegram;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SendMessageResponse {
 
     @JsonProperty("ok")
@@ -15,6 +17,7 @@ public class SendMessageResponse {
 }
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 class TelegramResult {
     @JsonProperty("message_id")
     private Long messageId;
@@ -30,6 +33,7 @@ class TelegramResult {
 }
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 class TelegramResultFrom {
     private Long id;
 
@@ -44,6 +48,7 @@ class TelegramResultFrom {
 }
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 class TelegramChat {
 
     private Long id;
