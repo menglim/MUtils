@@ -577,13 +577,7 @@ public class AppUtils {
             XPath xPath = XPathFactory.newInstance().newXPath();
             NodeList nodeList = (NodeList) xPath.compile(path).evaluate(doc, XPathConstants.NODESET);
             return nodeList;
-        } catch (ParserConfigurationException e) {
-            e.printStackTrace();
-        } catch (SAXException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (XPathExpressionException e) {
+        } catch (ParserConfigurationException | SAXException | IOException | XPathExpressionException e) {
             e.printStackTrace();
         }
         return null;
@@ -595,7 +589,7 @@ public class AppUtils {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        for (int i = 0; i < node.getChildNodes().getLength(); i++) {
+        for (int i = 0; i < Objects.requireNonNull(node).getChildNodes().getLength(); i++) {
             Node eachChildNode = node.getChildNodes().item(i);
             if (eachChildNode != null) {
 //                String nodeName = eachChildNode.getNodeName();
@@ -622,13 +616,7 @@ public class AppUtils {
             }
             log.error(path + " not found");
             return null;
-        } catch (ParserConfigurationException e) {
-            e.printStackTrace();
-        } catch (SAXException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (XPathExpressionException e) {
+        } catch (ParserConfigurationException | SAXException | IOException | XPathExpressionException e) {
             e.printStackTrace();
         }
         return null;
@@ -653,13 +641,7 @@ public class AppUtils {
                 return null;
             }
             return node.getAttributes().getNamedItem(attributeKey).getTextContent();
-        } catch (ParserConfigurationException e) {
-            e.printStackTrace();
-        } catch (SAXException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (XPathExpressionException e) {
+        } catch (ParserConfigurationException | SAXException | IOException | XPathExpressionException e) {
             e.printStackTrace();
         }
         return null;
