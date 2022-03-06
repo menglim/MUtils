@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Builder
-public class ExcelFileUtils<T> {
+class ExcelFileUtils<T> {
     private InputStream inputStream;
     private int sheetIndex;
     private int rowStart;

@@ -8,6 +8,7 @@ import com.github.menglim.mutils.annotation.CSVField;
 import com.github.menglim.mutils.annotation.ExcelField;
 import com.github.menglim.mutils.model.CSVModel;
 import com.github.menglim.mutils.model.ExcelFieldModel;
+import com.github.menglim.mutils.model.KeyValue;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -24,6 +25,10 @@ import com.hierynomus.smbj.auth.AuthenticationContext;
 import com.hierynomus.smbj.connection.Connection;
 import com.hierynomus.smbj.session.Session;
 import com.hierynomus.smbj.share.DiskShare;
+import com.mashape.unirest.http.HttpMethod;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.schmizz.sshj.SSHClient;
@@ -31,6 +36,10 @@ import net.schmizz.sshj.sftp.SFTPClient;
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.HttpClient;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.TrustStrategy;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -52,6 +61,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -73,8 +83,9 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.Key;
-import java.security.SecureRandom;
+import java.security.*;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -90,6 +101,8 @@ import java.util.stream.Stream;
 
 @Slf4j
 public class AppUtils {
+
+    static HttpClient httpClient = null;
 
     public AppUtils() {
 
@@ -115,10 +128,6 @@ public class AppUtils {
         return !isNull(object);
     }
 
-//    public int getPageNumber(Optional<Integer> pageNumber, int defaultValue) {
-//        int page = (pageNumber.orElse(0) < 1) ? defaultValue : pageNumber.get() - 1;
-//        return page;
-//    }
 
     public int getPageNumber(Optional<Integer> pageNumber) {
         int page = (pageNumber.orElse(0) < 1) ? 0 : pageNumber.get() - 1;
@@ -189,7 +198,20 @@ public class AppUtils {
         return filenameWoExtension;
     }
 
-    public String genUniqueRandomId() {
+    public String getUUID(boolean withoutSymbol) {
+        UUID uuid = UUID.randomUUID();
+        String value = uuid.toString();
+        if (withoutSymbol) {
+            value = StringUtils.replace(value, "-", "");
+        }
+        return value;
+    }
+
+    public String getUUID() {
+        return this.getUUID(false);
+    }
+
+    public String getUUIDWithHashCode() {
         UUID uuid = UUID.randomUUID();
         return uuid + "@" + System.identityHashCode(uuid);
     }
@@ -200,7 +222,7 @@ public class AppUtils {
         return mimeType;
     }
 
-    public int random(int from, int to) {
+    public int getRandom(int from, int to) {
         Random rn = new Random();
         return rn.nextInt(to - from + 1) + from;
     }
@@ -225,7 +247,7 @@ public class AppUtils {
     }
 
     public String getTimestamp() {
-        return getDate("yyyyMMddHHmmss");
+        return getDate("yyyyMMddHHmmssS");
     }
 
     public Date getDate(String dateValue, String formatter) {
@@ -710,9 +732,6 @@ public class AppUtils {
         return Arrays.stream(valuesWithSplitter.split(splitter)).map(String::trim).collect(Collectors.toList());
     }
 
-    private String sqlString(String value) {
-        return "'" + value + "'";
-    }
 
     public String sql(Object value) {
         Class clazz = value.getClass();
@@ -1776,13 +1795,6 @@ public class AppUtils {
         }
     }
 
-    public String splitGetAtFirst(String value, String separator) {
-        String[] tmp = StringUtils.split(value, separator);
-        if (tmp.length > 0) {
-            return tmp[0];
-        }
-        return value;
-    }
 
     public String getAccountNoFormat(String accountNo) {
         return StringUtils.isNotEmpty(accountNo) ? accountNo.substring(0, 5) + " "
@@ -1868,6 +1880,204 @@ public class AppUtils {
         return Integer.parseInt(doubleAsString);
     }
 
+    public String postXml(String url, String xmlRequest) {
+        HashMap<String, String> headerParameters = new HashMap<>();
+        headerParameters.put("Content-Type", "text/xml");
+        xmlRequest = StringUtils.normalizeSpace(xmlRequest);
+        return processToServer(HttpMethod.POST, xmlRequest, url, headerParameters);
+    }
+
+    public <T> T getJson(String url, Class<T> outputClazz, KeyValue<String, String>... additionalHeaderParameters) {
+        String responseBody = getJson(url, additionalHeaderParameters);
+        if (AppUtils.getInstance().nonNull(responseBody))
+            return (T) AppUtils.getInstance().toObject(responseBody, outputClazz);
+        else {
+            return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T getJsonAuthorization(String url, Class<T> outputClazz, String bearerToken) {
+        log.info("GET" + " to " + url);
+        HashMap<String, String> headerParameters = new HashMap<>();
+        headerParameters.put("Content-Type", "application/json");
+        headerParameters.put("Authorization", "Bearer " + bearerToken);
+        String jsonResponse = null;
+        try {
+            Unirest.setHttpClient(getHttpClient());
+            HttpResponse<Object> response = Unirest.get(url).headers(headerParameters).asObject(String.class);
+            assert response != null;
+            jsonResponse = response.getBody().toString();
+            if (response.getStatus() != 200) {
+                log.error("HttpStatus = " + response.getStatus() + " with raw response => " + jsonResponse);
+            } else {
+                log.info("HttpStatus = " + response.getStatus());
+            }
+        } catch (UnirestException var7) {
+            var7.printStackTrace();
+        }
+        if (AppUtils.getInstance().nonNull(jsonResponse))
+            return (T) AppUtils.getInstance().toObject(jsonResponse, outputClazz);
+        else {
+            return null;
+        }
+    }
+
+    public <T> T getJson(String url, TypeReference<T> outputClazz, KeyValue<String, String>... additionalHeaderParameters) {
+        String responseBody = getJson(url, additionalHeaderParameters);
+        if (AppUtils.getInstance().nonNull(responseBody))
+            return (T) AppUtils.getInstance().toObject(responseBody, outputClazz);
+        else {
+            return null;
+        }
+    }
+
+    public <T> T postJson(String url, HashMap<String, Object> body, TypeReference<T> outputClazz, KeyValue<String, String>... additionalHeaderParameters) {
+        String responseBody = postJson(url, body, additionalHeaderParameters);
+        if (AppUtils.getInstance().nonNull(responseBody))
+            return (T) AppUtils.getInstance().toObject(responseBody, outputClazz);
+        else {
+            return null;
+        }
+    }
+
+    public <T> T postJson(String url, String jsonBody, TypeReference<T> outputClazz, KeyValue<String, String>... additionalHeaderParameters) {
+        String responseBody = postJson(url, jsonBody, additionalHeaderParameters);
+        if (AppUtils.getInstance().nonNull(responseBody))
+            return (T) AppUtils.getInstance().toObject(responseBody, outputClazz);
+        else {
+            return null;
+        }
+    }
+
+    public String getJson(String url, KeyValue<String, String>... additionalHeaderParameters) {
+        HashMap<String, String> headerParameters = new HashMap<>();
+        headerParameters.put("Content-Type", "application/json");
+        if (additionalHeaderParameters != null) {
+            for (int i = 0; i < additionalHeaderParameters.length; i++) {
+                KeyValue<String, String> aValue = additionalHeaderParameters[i];
+                if (aValue != null) {
+                    if (AppUtils.getInstance().nonNull(aValue.getKey())) {
+                        headerParameters.put(aValue.getKey(), aValue.getValue());
+                    }
+                }
+            }
+        }
+        return processToServer(HttpMethod.GET, null, url, headerParameters);
+    }
+
+    public <T> T postJson(String url, HashMap<String, Object> requestBody, Class<T> outputClazz, KeyValue<String, String>... additionalHeaderParameters) {
+        String requestBodyAsString = AppUtils.getInstance().toJsonString(requestBody, false);
+        String value = postJson(url, requestBodyAsString, additionalHeaderParameters);
+        if (AppUtils.getInstance().nonNull(value))
+            return (T) AppUtils.getInstance().toObject(value, outputClazz);
+        return null;
+    }
+
+    public String postJson(String url, HashMap<String, Object> requestBody, KeyValue<String, String>... additionalHeaderParameters) {
+        String requestBodyAsString = AppUtils.getInstance().toJsonString(requestBody, false);
+        return postJson(url, requestBodyAsString, additionalHeaderParameters);
+    }
+
+    public <T> T deleteJson(String url, Class<T> outputClazz) {
+        String value = processToServer(HttpMethod.DELETE, null, url, null);
+        if (AppUtils.getInstance().nonNull(value))
+            return (T) AppUtils.getInstance().toObject(value, outputClazz);
+        return null;
+    }
+
+    public String postJson(String url, String jsonBody, KeyValue<String, String>... additionalHeaderParameters) {
+        HashMap<String, String> headerParameters = new HashMap<>();
+        headerParameters.put("Content-Type", "application/json");
+        if (additionalHeaderParameters != null) {
+            for (int i = 0; i < additionalHeaderParameters.length; i++) {
+                KeyValue<String, String> aValue = additionalHeaderParameters[i];
+                if (aValue != null) {
+                    if (AppUtils.getInstance().nonNull(aValue.getKey())) {
+                        headerParameters.put(aValue.getKey(), aValue.getValue());
+                    }
+                }
+            }
+        }
+        return processToServer(HttpMethod.POST, jsonBody, url, headerParameters);
+    }
+
+    public String postText(String url, String jsonBody, KeyValue<String, String>... additionalHeaderParameters) {
+        HashMap<String, String> headerParameters = new HashMap<>();
+        headerParameters.put("Content-Type", "text/plain");
+        if (additionalHeaderParameters != null) {
+            for (int i = 0; i < additionalHeaderParameters.length; i++) {
+                KeyValue<String, String> aValue = additionalHeaderParameters[i];
+                if (aValue != null) {
+                    if (AppUtils.getInstance().nonNull(aValue.getKey())) {
+                        headerParameters.put(aValue.getKey(), aValue.getValue());
+                    }
+                }
+            }
+        }
+        return processToServer(HttpMethod.POST, jsonBody, url, headerParameters);
+    }
+
+    private String processToServer(HttpMethod httpMethod, String payload, String url, HashMap<String, String> headerParameters) {
+        try {
+            Unirest.setHttpClient(getHttpClient());
+            HttpResponse<Object> response = null;
+            switch (httpMethod) {
+                case GET:
+                    log.info(httpMethod.name() + " to " + url);
+                    response = Unirest.get(url).headers(headerParameters).asObject(String.class);
+                    break;
+                case PUT:
+                case HEAD:
+                case POST:
+                    log.info(httpMethod.name() + " to " + url + " with body => " + payload);
+                    response = Unirest.post(url).headers(headerParameters).body(payload).asObject(String.class);
+                    break;
+                case PATCH:
+                case DELETE:
+                    log.info(httpMethod.name() + " to " + url);
+                    response = Unirest.delete(url).asObject(String.class);
+                    break;
+                case OPTIONS:
+            }
+            assert response != null;
+            String jsonResponse = response.getBody().toString();
+            if (response.getStatus() != 200) {
+                log.error("HttpStatus = " + response.getStatus() + " with raw response => " + jsonResponse);
+            } else {
+                log.info("HttpStatus = " + response.getStatus() + " with raw response => " + jsonResponse);
+            }
+            return jsonResponse;
+        } catch (UnirestException var7) {
+            var7.printStackTrace();
+        }
+        return null;
+    }
+
+    private HttpClient getHttpClient() {
+        if (httpClient == null) {
+            TrustStrategy acceptingTrustStrategy = new TrustStrategy() {
+                @Override
+                public boolean isTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+                    return true;
+                }
+            };
+            SSLContext sslContext = null;
+            try {
+                sslContext = org.apache.http.ssl.SSLContexts.custom()
+                        .loadTrustMaterial(null, acceptingTrustStrategy)
+                        .build();
+                SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
+                httpClient = HttpClients.custom()
+                        .setSSLSocketFactory(csf)
+                        .build();
+            } catch (NoSuchAlgorithmException | KeyManagementException | KeyStoreException e) {
+                log.error("Error exception: " + e);
+            }
+        }
+        return httpClient;
+    }
+
     public BigDecimal toDecimal(String value) {
         if (AppUtils.getInstance().isNull(value)) return BigDecimal.ZERO;
         BigDecimal bigDecimal = new BigDecimal(value);
@@ -1900,25 +2110,85 @@ public class AppUtils {
         return value;
     }
 
+    public String splitGetAtFirst(String value, String separator) {
+        String[] tmp = StringUtils.split(value, separator);
+        if (tmp.length > 0) {
+            return tmp[0];
+        }
+        return value;
+    }
+
+    public String split(String value, String separator, int index, String defaultValue) {
+        if (value.contains(separator)) {
+            String[] tmp = StringUtils.split(value, separator);
+            if (tmp.length > index) {
+                return tmp[index];
+            } else {
+                return defaultValue;
+            }
+        }
+        return defaultValue;
+    }
+
+    public String split(String value, String separator, int indexAtFirst, int indexAtEnd, String defaultValue) {
+        StringBuilder sb = new StringBuilder();
+        if (value.contains(separator)) {
+            String[] tmp = StringUtils.split(value, separator);
+            if (tmp.length > indexAtFirst) {
+                sb.append(tmp[indexAtFirst]);
+            }
+            if (tmp.length > indexAtEnd) {
+                sb.append(tmp[indexAtEnd]);
+            }
+            return sb.toString();
+        }
+        return defaultValue;
+    }
+
     public String toFastAmount(String currency, BigDecimal value) {
         if (currency.equalsIgnoreCase("KHR")) {
             if (value.toString().contains(".")) {
                 return StringUtils.split(value.toString(), ".")[0];
             }
-            return formatCurrency(value,"0");
+            return formatCurrency(value, "0");
         } else {
-            if (value.toString().contains(".")) {
-                long lastDecimalValue = Long.parseLong(splitGetAtEnd(value.toString(), "."));
-                if (lastDecimalValue == 0) {
-                    return formatCurrency(value, "0");
-                } else if (lastDecimalValue < 10) {
-                    return formatCurrency(value, "0.0");
-                } else {
-                    formatCurrency(value, "0.00");
-                }
-            }
+//            if (value.toString().contains(".")) {
+//                long lastDecimalValue = Long.parseLong(splitGetAtEnd(value.toString(), "."));
+//                if (lastDecimalValue == 0) {
+//                    return formatCurrency(value, "0");
+//                } else if (lastDecimalValue < 10) {
+//                    return formatCurrency(value, "0.0");
+//                } else {
+//                    formatCurrency(value, "0.00");
+//                }
+//            }
             return formatCurrency(value, "0.00");
         }
+    }
+
+    public String toFastAmount(String currency, BigDecimal value, String format) {
+        if (currency.equalsIgnoreCase("KHR")) {
+            if (value.toString().contains(".")) {
+                return formatCurrency(BigDecimal.valueOf(Long.parseLong(StringUtils.split(value.toString(), ".")[0])), format);
+            }
+            return formatCurrency(value, format);
+        } else {
+//            if (value.toString().contains(".")) {
+//                long lastDecimalValue = Long.parseLong(splitGetAtEnd(value.toString(), "."));
+//                if (lastDecimalValue == 0) {
+//                    return formatCurrency(value, "0");
+//                } else if (lastDecimalValue < 10) {
+//                    return formatCurrency(value, "0.0");
+//                } else {
+//                    formatCurrency(value, "0.00");
+//                }
+//            }
+            return formatCurrency(value, "0.00");
+        }
+    }
+
+    private String sqlString(String value) {
+        return "'" + value + "'";
     }
 
     public String sql(String... values) {
