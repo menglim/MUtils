@@ -6,7 +6,7 @@
 
     <groupId>com.github.menglim</groupId>
     <artifactId>mutils</artifactId>
-    <version>1.2.27</version>
+    <version>1.2.28</version>
     <packaging>jar</packaging>
     <name>${project.artifactId}</name>
     <description>Collection of Utils</description>
@@ -142,11 +142,11 @@
             <version>1.50</version>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.bouncycastle</groupId>-->
-<!--            <artifactId>bcprov-jdk15on</artifactId>-->
-<!--            <version>1.50</version>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.bouncycastle</groupId>-->
+        <!--            <artifactId>bcprov-jdk15on</artifactId>-->
+        <!--            <version>1.50</version>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>com.github.pengrad</groupId>
             <artifactId>java-telegram-bot-api</artifactId>
