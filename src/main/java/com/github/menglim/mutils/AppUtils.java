@@ -2345,7 +2345,7 @@ public class AppUtils {
         return null;
     }
 
-    private byte[] fromObjectToByteArray(Object serializableObject) {
+    public byte[] fromObjectToByteArray(Object serializableObject) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream out = null;
         try {
@@ -2365,7 +2365,7 @@ public class AppUtils {
         return null;
     }
 
-    private Object fromByteArrayToObject(byte[] bytes) {
+    public Object fromByteArrayToObject(byte[] bytes) {
         ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
         ObjectInput in = null;
         try {
