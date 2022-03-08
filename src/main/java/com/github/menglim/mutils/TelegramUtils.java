@@ -6,6 +6,7 @@ import com.github.menglim.mutils.model.TelegramSendMessageResult;
 import com.github.menglim.mutils.model.TelegramWebhookInfo;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
 
@@ -25,17 +26,28 @@ public class TelegramUtils {
     public TelegramResponse<TelegramSendMessageResult> send(@NonNull String botToken, @NonNull String chatId, @NonNull String message) {
         String url = "https://api.telegram.org/bot{bot_token}/sendMessage";
         try {
-            HashMap<String, Object> body = new HashMap<>();
-            body.put("chat_id", chatId);
-            body.put("text", message);
-
             url = url.replace("{bot_token}", botToken);
 
-            TelegramResponse<TelegramSendMessageResult> response = AppUtils.getInstance().postJson(url, body,
-                    new TypeReference<TelegramResponse<TelegramSendMessageResult>>() {
-                    }
-            );
-
+            TelegramResponse<TelegramSendMessageResult> response = null;
+            if (message.length() > 4096) {
+                for (int i = 0; i < message.length(); i = i + 4096) {
+                    HashMap<String, Object> body = new HashMap<>();
+                    body.put("chat_id", chatId);
+                    body.put("text", StringUtils.substring(message, i, i + 4096));
+                    response = AppUtils.getInstance().postJson(url, body,
+                            new TypeReference<TelegramResponse<TelegramSendMessageResult>>() {
+                            }
+                    );
+                }
+            } else {
+                HashMap<String, Object> body = new HashMap<>();
+                body.put("chat_id", chatId);
+                body.put("text", message);
+                response = AppUtils.getInstance().postJson(url, body,
+                        new TypeReference<TelegramResponse<TelegramSendMessageResult>>() {
+                        }
+                );
+            }
             if (response.isSuccess()) {
                 log.info("Telegram Send Message successfully");
             } else {
