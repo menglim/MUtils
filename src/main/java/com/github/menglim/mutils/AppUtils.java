@@ -1747,7 +1747,7 @@ public class AppUtils {
         return resultList;
     }
 
-    public String encrypt(String plainText, String keyPhrase) throws Exception {
+    public String encryptAES(String plainText, String keyPhrase) throws Exception {
         if (keyPhrase.length() != 16) {
             throw new Exception("Key must be in 16 digits");
         }
@@ -1763,7 +1763,34 @@ public class AppUtils {
         }
     }
 
-    public String decrypt(String encryptedBase64Text, String keyPhrase) {
+    public byte[] encryptAES(byte[] data, String keyPhrase) throws Exception {
+        if (keyPhrase.length() != 16) {
+            throw new Exception("Key must be in 16 digits");
+        }
+        try {
+            Key aesKey = new SecretKeySpec(keyPhrase.getBytes(), "AES");
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.ENCRYPT_MODE, aesKey);
+            return cipher.doFinal(data);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public byte[] decryptAES(byte[] data, String keyPhrase) {
+        try {
+            Key aesKey = new SecretKeySpec(keyPhrase.getBytes(), "AES");
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.DECRYPT_MODE, aesKey);
+            return cipher.doFinal(data);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public String decryptAES(String encryptedBase64Text, String keyPhrase) {
         try {
             Key aesKey = new SecretKeySpec(keyPhrase.getBytes(), "AES");
             Cipher cipher = Cipher.getInstance("AES");
