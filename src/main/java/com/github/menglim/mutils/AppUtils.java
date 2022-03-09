@@ -9,6 +9,9 @@ import com.github.menglim.mutils.annotation.ExcelField;
 import com.github.menglim.mutils.model.CSVModel;
 import com.github.menglim.mutils.model.ExcelFieldModel;
 import com.github.menglim.mutils.model.KeyValue;
+import com.github.windpapi4j.InitializationFailedException;
+import com.github.windpapi4j.WinAPICallFailedException;
+import com.github.windpapi4j.WinDPAPI;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -2239,5 +2242,173 @@ public class AppUtils {
             return result.substring(0, result.length() - 1);
         }
         return result.toString();
+    }
+
+    public String inputString(String label, String defaultValue) {
+        String value = "";
+        while (AppUtils.getInstance().isNull(value)) {
+            System.out.print(label);
+            Scanner input = new Scanner(System.in);
+            value = input.nextLine();
+            if (AppUtils.getInstance().isNull(value)) {
+                value = defaultValue;
+            }
+        }
+        return value;
+    }
+
+    public int inputInteger(String label, int defaultValue) {
+        String value = inputString(label, String.valueOf(defaultValue));
+        return Integer.parseInt(value);
+    }
+
+    private String readLine(String message, String defaultPassword) throws IOException {
+        if (System.console() != null) {
+            String value = System.console().readLine(message);
+            if (AppUtils.getInstance().isNull(value)) {
+                return defaultPassword;
+            }
+            return value;
+        }
+        System.out.print(message);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        String value = reader.readLine();
+        if (AppUtils.getInstance().isNull(value)) {
+            return defaultPassword;
+        }
+        return value;
+    }
+
+    public String inputPassword(String message, String defaultPassword)
+            throws IOException {
+        if (System.console() != null) {
+            String value = String.valueOf(System.console().readPassword(message));
+            if (AppUtils.getInstance().isNull(value)) {
+                return defaultPassword;
+            }
+            return value;
+        }
+        return String.valueOf(readLine(message, defaultPassword).toCharArray());
+    }
+
+    public boolean inputConfirm(String label) {
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            System.out.print(label);
+            String value = scanner.nextLine();
+            if (value.equalsIgnoreCase("n") || value.equalsIgnoreCase("no")) {
+                return false;
+            } else if (value.equalsIgnoreCase("y") || value.equalsIgnoreCase("yes")) {
+                return true;
+            }
+        }
+    }
+
+    public String encryptWindowDataProtectionAPI(String rawString) {
+        if (WinDPAPI.isPlatformSupported()) {
+            WinDPAPI winDPAPI = null;
+            try {
+                winDPAPI = WinDPAPI.newInstance(WinDPAPI.CryptProtectFlag.CRYPTPROTECT_LOCAL_MACHINE);
+                String charsetName = "UTF-8";
+                byte[] cipherTextBytes = winDPAPI.protectData(rawString.getBytes(charsetName));
+                String encryptedText = AppUtils.getInstance().toBase64(cipherTextBytes);
+                return encryptedText;
+            } catch (InitializationFailedException | UnsupportedEncodingException | WinAPICallFailedException e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.err.println("ERROR: platform not supported");
+        }
+        return null;
+    }
+
+    public byte[] encryptWindowDataProtectionAPI(byte[] data) {
+        if (WinDPAPI.isPlatformSupported()) {
+            WinDPAPI winDPAPI = null;
+            try {
+                winDPAPI = WinDPAPI.newInstance(WinDPAPI.CryptProtectFlag.CRYPTPROTECT_LOCAL_MACHINE);
+                byte[] cipherTextBytes = winDPAPI.protectData(data);
+                return cipherTextBytes;
+            } catch (InitializationFailedException | WinAPICallFailedException e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.err.println("ERROR: platform not supported");
+        }
+        return null;
+    }
+
+    public String decryptWindowDataProtectionAPI(String encryptedText) {
+        if (WinDPAPI.isPlatformSupported()) {
+            WinDPAPI winDPAPI = null;
+            try {
+                winDPAPI = WinDPAPI.newInstance(WinDPAPI.CryptProtectFlag.CRYPTPROTECT_LOCAL_MACHINE);
+                String charsetName = "UTF-8";
+                byte[] cipherTextBytes = winDPAPI.unprotectData(AppUtils.getInstance().fromBase64ToByte(encryptedText));
+                String decryptedText = new String(cipherTextBytes, charsetName);
+                return decryptedText;
+            } catch (InitializationFailedException | UnsupportedEncodingException | WinAPICallFailedException e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.err.println("ERROR: platform not supported");
+        }
+        return null;
+    }
+
+    public byte[] decryptWindowDataProtectionAPI(byte[] data) {
+        if (WinDPAPI.isPlatformSupported()) {
+            WinDPAPI winDPAPI = null;
+            try {
+                winDPAPI = WinDPAPI.newInstance(WinDPAPI.CryptProtectFlag.CRYPTPROTECT_LOCAL_MACHINE);
+                byte[] cipherTextBytes = winDPAPI.unprotectData(data);
+                return cipherTextBytes;
+            } catch (InitializationFailedException | WinAPICallFailedException e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.err.println("ERROR: platform not supported");
+        }
+        return null;
+    }
+
+    public byte[] fromObjectToByteArray(Object serializableObject) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream out = null;
+        try {
+            out = new ObjectOutputStream(bos);
+            out.writeObject(serializableObject);
+            out.flush();
+            return bos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                bos.close();
+            } catch (IOException ex) {
+                // ignore close exception
+            }
+        }
+        return null;
+    }
+
+    public Object fromByteArrayToObject(byte[] bytes) {
+        ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+        ObjectInput in = null;
+        try {
+            in = new ObjectInputStream(bis);
+            return in.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (in != null) {
+                    in.close();
+                }
+            } catch (IOException ex) {
+                // ignore close exception
+            }
+        }
+        return null;
     }
 }
