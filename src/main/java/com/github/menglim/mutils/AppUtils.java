@@ -2410,7 +2410,7 @@ public class AppUtils {
     }
 
     public String getExecutableFilePath(Class clazz) throws UnsupportedEncodingException {
-        String path = new File(clazz.getClass().getProtectionDomain().getCodeSource().getLocation().getPath()).getAbsolutePath() + ".conf";
+        String path = new File(clazz.getProtectionDomain().getCodeSource().getLocation().getPath()).getAbsolutePath() + ".conf";
         return URLDecoder.decode(path, "UTF-8");
     }
 }
