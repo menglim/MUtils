@@ -79,10 +79,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.URL;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -2410,5 +2407,10 @@ public class AppUtils {
             }
         }
         return null;
+    }
+
+    public String getExecutableFilePath(Class clazz) throws UnsupportedEncodingException {
+        String path = new File(clazz.getClass().getProtectionDomain().getCodeSource().getLocation().getPath()).getAbsolutePath() + ".conf";
+        return URLDecoder.decode(path, "UTF-8");
     }
 }
