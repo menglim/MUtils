@@ -43,8 +43,8 @@ public class EmailUtils {
 
         Properties prop = new Properties();
         prop.put("mail.smtp.host", smtpHost);
-        prop.put("mail.smtp.port", port);
-        prop.put("mail.smtp.auth", authenticationEnable);
+        prop.put("mail.smtp.port", String.valueOf(port));
+        prop.put("mail.smtp.auth", String.valueOf(authenticationEnable));
         switch (sendEmailSecurityOption) {
             case SSL:
                 prop.put("mail.smtp.ssl.enable", "true");
@@ -56,6 +56,7 @@ public class EmailUtils {
             default:
                 break;
         }
+        log.info("Email Prop => " + prop);
         Session session = Session.getInstance(prop,
                 new javax.mail.Authenticator() {
                     protected PasswordAuthentication getPasswordAuthentication() {
