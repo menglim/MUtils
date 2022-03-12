@@ -48,12 +48,14 @@ public class EmailUtils {
         switch (sendEmailSecurityOption) {
             case SSL:
                 prop.put("mail.smtp.ssl.enable", "true");
-            case None:
+                break;
             case TTSL:
                 prop.put("mail.smtp.starttls.enable", "true");
+                break;
+            case None:
+            default:
+                break;
         }
-
-
         Session session = Session.getInstance(prop,
                 new javax.mail.Authenticator() {
                     protected PasswordAuthentication getPasswordAuthentication() {
