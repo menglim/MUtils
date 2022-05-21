@@ -2456,15 +2456,15 @@ public class AppUtils {
 
     public boolean sendEmail(String host,
                              int port,
-                             String username,
-                             String password,
                              boolean authenticationEnable,
                              SendEmailSecurityOption sslOption,
-                             String fromEmailAddress,
-                             String toEmailAddressCommaOption,
+                             String username,
+                             String password,
+                             @NonNull String fromEmailAddress,
+                             @NonNull String toEmailAddressCommaOption,
                              String ccEmailAddressCommaOption,
-                             String subject,
-                             String body,
+                             @NonNull String subject,
+                             @NonNull String body,
                              List<String> attachmentRelativePath) {
 
         log.info("Sending Email via " + host + ":" + port + " with " + username + " auth: " + authenticationEnable + " ssl: " + sslOption);
