@@ -45,6 +45,8 @@ public class EmailUtils {
         prop.put("mail.smtp.host", smtpHost);
         prop.put("mail.smtp.port", String.valueOf(port));
         prop.put("mail.smtp.auth", String.valueOf(authenticationEnable));
+        prop.put("mail.smtp.ssl.trust", smtpHost);
+        prop.put("mail.smtp.socketFactory.fallback", "true");
         switch (sendEmailSecurityOption) {
             case SSL:
                 prop.put("mail.smtp.ssl.enable", "true");

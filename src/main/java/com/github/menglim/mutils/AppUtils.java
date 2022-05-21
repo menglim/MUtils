@@ -58,11 +58,17 @@ import org.w3c.dom.ls.LSSerializer;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
 import javax.activation.MimetypesFileTypeMap;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Multipart;
+import javax.mail.Transport;
+import javax.mail.internet.*;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.xml.parsers.DocumentBuilder;
@@ -2412,5 +2418,126 @@ public class AppUtils {
     public String getExecutableFilePath(Class clazz) throws UnsupportedEncodingException {
         String path = new File(clazz.getProtectionDomain().getCodeSource().getLocation().getPath()).getAbsolutePath() + ".conf";
         return URLDecoder.decode(path, "UTF-8");
+    }
+
+    public boolean sendEmail(String host,
+                             int port,
+                             String username,
+                             String password,
+                             boolean authenticationEnable,
+                             SendEmailSecurityOption sslOption,
+                             String fromEmailAddress,
+                             String toEmailAddressCommaOption,
+                             String ccEmailAddressCommaOption,
+                             String subject,
+                             String body,
+                             List<String> attachmentRelativePath) {
+
+        log.info("Sending Email via " + host + ":" + port + " with " + username + " auth: " + authenticationEnable + " ssl: " + sslOption);
+        Properties prop = new Properties();
+        prop.put("mail.smtp.host", host);
+        prop.put("mail.smtp.port", String.valueOf(port));
+        prop.put("mail.smtp.auth", String.valueOf(authenticationEnable));
+
+        switch (sslOption) {
+            case SSL:
+                prop.put("mail.smtp.ssl.enable", "true");
+                break;
+            case None:
+                break;
+            case TTSL:
+                prop.put("mail.smtp.starttls.enable", "true");
+                break;
+        }
+        javax.mail.Session session = javax.mail.Session.getInstance(prop,
+                new javax.mail.Authenticator() {
+                    protected javax.mail.PasswordAuthentication getPasswordAuthentication() {
+                        return new javax.mail.PasswordAuthentication(username, password);
+                    }
+                });
+        Message msg = new MimeMessage(session);
+        try {
+
+            msg.setFrom(new InternetAddress(fromEmailAddress));
+
+            msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmailAddressCommaOption, false));
+            if (AppUtils.getInstance().nonNull(ccEmailAddressCommaOption)) {
+                msg.setRecipients(Message.RecipientType.CC, InternetAddress.parse(ccEmailAddressCommaOption, false));
+            }
+            msg.setSubject(subject);
+            MimeBodyPart text = new MimeBodyPart();
+            text.setDataHandler(new DataHandler(new HTMLDataSource(body)));
+
+            List<MimeBodyPart> attachments = null;
+            if (AppUtils.getInstance().nonNull(attachmentRelativePath)) {
+                for (int i = 0; i < attachmentRelativePath.size(); i++) {
+                    MimeBodyPart attachment = new MimeBodyPart();
+                    FileDataSource fileDataSource = new FileDataSource(attachmentRelativePath.get(i));
+                    try {
+                        attachment.setDataHandler(new DataHandler(fileDataSource));
+                        attachment.setFileName(fileDataSource.getName());
+                        if (attachments == null) attachments = new ArrayList<>();
+                        attachments.add(attachment);
+                    } catch (MessagingException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+
+            Multipart multipart = new MimeMultipart();
+            multipart.addBodyPart(text);
+            if (attachments != null) {
+                if (attachments.size() > 0) {
+                    attachments.forEach(mimeBodyPart -> {
+                        try {
+                            multipart.addBodyPart(mimeBodyPart);
+                        } catch (MessagingException e) {
+                            e.printStackTrace();
+                        }
+                    });
+                }
+            }
+
+            msg.setContent(multipart);
+            msg.setSentDate(new Date());
+            Transport.send(msg);
+            log.info("Email has been sent successfully");
+            return true;
+        } catch (MessagingException e) {
+            log.error("Email sending failed because => " + e.getLocalizedMessage());
+            log.error(e.getMessage(), e.fillInStackTrace());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    static class HTMLDataSource implements DataSource {
+
+        private String html;
+
+        public HTMLDataSource(String htmlString) {
+            html = htmlString;
+        }
+
+        @Override
+        public InputStream getInputStream() throws IOException {
+            if (html == null) throw new IOException("html message is null!");
+            return new ByteArrayInputStream(html.getBytes());
+        }
+
+        @Override
+        public OutputStream getOutputStream() throws IOException {
+            throw new IOException("This DataHandler cannot write HTML");
+        }
+
+        @Override
+        public String getContentType() {
+            return "text/html";
+        }
+
+        @Override
+        public String getName() {
+            return "HTMLDataSource";
+        }
     }
 }
