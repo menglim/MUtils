@@ -64,15 +64,8 @@ import javax.activation.FileDataSource;
 import javax.activation.MimetypesFileTypeMap;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
-import javax.mail.BodyPart;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
-import javax.mail.Transport;
+import javax.mail.*;
 import javax.mail.internet.*;
-import javax.mail.internet.MimeMultipart;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.xml.parsers.DocumentBuilder;
@@ -2482,6 +2475,10 @@ public class AppUtils {
             case TTSL:
                 prop.put("mail.smtp.starttls.enable", "true");
                 break;
+            case TTSLv12:
+                prop.put("mail.smtp.starttls.enable", "true");
+                prop.put("mail.smtp.ssl.protocols", "TLSv1.2");
+                break;
         }
         javax.mail.Session session = javax.mail.Session.getInstance(prop,
                 new javax.mail.Authenticator() {
@@ -2545,6 +2542,7 @@ public class AppUtils {
             return false;
         }
     }
+
     static class HTMLDataSource implements DataSource {
 
         private String html;
