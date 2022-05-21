@@ -64,11 +64,15 @@ import javax.activation.FileDataSource;
 import javax.activation.MimetypesFileTypeMap;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+import javax.mail.BodyPart;
+import javax.mail.Message;
+import javax.mail.MessagingException;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Transport;
 import javax.mail.internet.*;
+import javax.mail.internet.MimeMultipart;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.xml.parsers.DocumentBuilder;
@@ -723,7 +727,7 @@ public class AppUtils {
 
     public String sql(Object value) {
         Class clazz = value.getClass();
-        if (clazz == Integer.class || clazz == Double.class || clazz == Float.class) {
+        if (clazz == Integer.class || clazz == Double.class || clazz == Float.class || clazz == Long.class) {
             return String.valueOf(value);
         } else if (clazz == String.class) {
             return sqlString(String.valueOf(value));
@@ -2418,6 +2422,36 @@ public class AppUtils {
     public String getExecutableFilePath(Class clazz) throws UnsupportedEncodingException {
         String path = new File(clazz.getProtectionDomain().getCodeSource().getLocation().getPath()).getAbsolutePath() + ".conf";
         return URLDecoder.decode(path, "UTF-8");
+    }
+
+    private String getTextFromMessage(Message message) throws MessagingException, IOException {
+        String result = "";
+        if (message.isMimeType("text/plain")) {
+            result = message.getContent().toString();
+        } else if (message.isMimeType("multipart/*")) {
+            MimeMultipart mimeMultipart = (MimeMultipart) message.getContent();
+            result = getTextFromMimeMultipart(mimeMultipart);
+        }
+        return result;
+    }
+
+    private String getTextFromMimeMultipart(
+            MimeMultipart mimeMultipart) throws MessagingException, IOException {
+        String result = "";
+        int count = mimeMultipart.getCount();
+        for (int i = 0; i < count; i++) {
+            BodyPart bodyPart = mimeMultipart.getBodyPart(i);
+            if (bodyPart.isMimeType("text/plain")) {
+                result = result + "\n" + bodyPart.getContent();
+                break; // without break same text appears twice in my tests
+            } else if (bodyPart.isMimeType("text/html")) {
+                String html = (String) bodyPart.getContent();
+                result = result + "\n" + html;
+            } else if (bodyPart.getContent() instanceof MimeMultipart) {
+                result = result + getTextFromMimeMultipart((MimeMultipart) bodyPart.getContent());
+            }
+        }
+        return result;
     }
 
     public boolean sendEmail(String host,
