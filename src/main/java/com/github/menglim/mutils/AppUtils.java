@@ -2031,33 +2031,41 @@ public class AppUtils {
     }
 
     private String processToServer(HttpMethod httpMethod, String payload, String url, HashMap<String, String> headerParameters) {
+        String urlForLog = url;
         try {
             Unirest.setHttpClient(getHttpClient());
             HttpResponse<Object> response = null;
+            urlForLog = urlForLog.replaceAll("[paygo24.com/api/pre_pay?sid=]@[\\s\\S]*$", "=******");
             switch (httpMethod) {
                 case GET:
-                    log.info(httpMethod.name() + " to " + url);
+                    log.info(httpMethod.name() + " to " + urlForLog);
                     response = Unirest.get(url).headers(headerParameters).asObject(String.class);
                     break;
                 case PUT:
                 case HEAD:
                 case POST:
-                    log.info(httpMethod.name() + " to " + url + " with body => " + payload);
+                    String logPayload = payload.replaceFirst("(?s)<web:cm_password[^>]*>.*?</web:cm_password>", "<web:cm_password>*****</web:cm_password>");
+                    logPayload = logPayload.replaceFirst("(?s)<cm_password[^>]*>.*?</cm_password>", "<cm_password>*****</cm_password>");
+                    log.info(httpMethod.name() + " to " + urlForLog + " with body => " + logPayload);
                     response = Unirest.post(url).headers(headerParameters).body(payload).asObject(String.class);
                     break;
                 case PATCH:
                 case DELETE:
-                    log.info(httpMethod.name() + " to " + url);
+                    log.info(httpMethod.name() + " to " + urlForLog);
                     response = Unirest.delete(url).asObject(String.class);
                     break;
                 case OPTIONS:
             }
             assert response != null;
             String jsonResponse = response.getBody().toString();
+            String jsonResponseForLog = jsonResponse;
+            if (AppUtils.getInstance().nonNull(jsonResponseForLog)) {
+                jsonResponseForLog = jsonResponseForLog.replaceAll("(?s)<tran:Specific[^>]*>.*?</tran:Specific>", "<tran:Specific><tran:CreateVirtualCard Cvv2=\"*\"/></tran:Specific>");
+            }
             if (response.getStatus() != 200) {
-                log.error("HttpStatus = " + response.getStatus() + " with raw response => " + jsonResponse);
+                log.error("HttpStatus = " + response.getStatus() + " with raw response => " + jsonResponseForLog);
             } else {
-                log.info("HttpStatus = " + response.getStatus() + " with raw response => " + jsonResponse);
+                log.info("HttpStatus = " + response.getStatus() + " with raw response => " + jsonResponseForLog);
             }
             return jsonResponse;
         } catch (UnirestException var7) {
