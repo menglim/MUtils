@@ -169,6 +169,8 @@ public class CoreConstants {
         LEAVE_REQUEST,
         COMPANY_LOGO,
         COMPANY,
+        CUSTOMER_NOTICE,
+        ANNOUNCEMENT,
     }
 
     public enum StockType {

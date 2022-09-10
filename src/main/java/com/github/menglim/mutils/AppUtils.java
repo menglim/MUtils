@@ -28,10 +28,10 @@ import com.hierynomus.smbj.auth.AuthenticationContext;
 import com.hierynomus.smbj.connection.Connection;
 import com.hierynomus.smbj.session.Session;
 import com.hierynomus.smbj.share.DiskShare;
-import com.mashape.unirest.http.HttpMethod;
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
+import kong.unirest.HttpMethod;
+import kong.unirest.HttpResponse;
+import kong.unirest.Unirest;
+import kong.unirest.UnirestException;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.schmizz.sshj.SSHClient;
@@ -39,10 +39,6 @@ import net.schmizz.sshj.sftp.SFTPClient;
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.HttpClient;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustStrategy;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -67,7 +63,6 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.mail.*;
 import javax.mail.internet.*;
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -86,9 +81,8 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.*;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
+import java.security.Key;
+import java.security.SecureRandom;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -105,7 +99,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class AppUtils {
 
-    static HttpClient httpClient = null;
+    public int UNIREST_TIMEOUT = 10000;
 
     public AppUtils() {
 
@@ -1916,7 +1910,6 @@ public class AppUtils {
         headerParameters.put("Authorization", "Bearer " + bearerToken);
         String jsonResponse = null;
         try {
-            Unirest.setHttpClient(getHttpClient());
             HttpResponse<Object> response = Unirest.get(url).headers(headerParameters).asObject(String.class);
             assert response != null;
             jsonResponse = response.getBody().toString();
@@ -2030,34 +2023,42 @@ public class AppUtils {
         return processToServer(HttpMethod.POST, jsonBody, url, headerParameters);
     }
 
-    private String processToServer(HttpMethod httpMethod, String payload, String url, HashMap<String, String> headerParameters) {
+    public String processToServer(HttpMethod httpMethod, String payload, String url, HashMap<String, String> headerParameters) {
         String urlForLog = url;
         try {
-            Unirest.setHttpClient(getHttpClient());
-            HttpResponse<Object> response = null;
+            Unirest.config().reset();
+            Unirest.config().connectTimeout(UNIREST_TIMEOUT);
+            Unirest.config().socketTimeout(UNIREST_TIMEOUT);
+            Unirest.config().verifySsl(false);
+            HttpResponse<String> response = null;
+
             urlForLog = urlForLog.replaceAll("[paygo24.com/api/pre_pay?sid=]@[\\s\\S]*$", "=******");
-            switch (httpMethod) {
-                case GET:
-                    log.info(httpMethod.name() + " to " + urlForLog);
-                    response = Unirest.get(url).headers(headerParameters).asObject(String.class);
-                    break;
-                case PUT:
-                case HEAD:
-                case POST:
-                    String logPayload = payload.replaceFirst("(?s)<web:cm_password[^>]*>.*?</web:cm_password>", "<web:cm_password>*****</web:cm_password>");
-                    logPayload = logPayload.replaceFirst("(?s)<cm_password[^>]*>.*?</cm_password>", "<cm_password>*****</cm_password>");
-                    log.info(httpMethod.name() + " to " + urlForLog + " with body => " + logPayload);
-                    response = Unirest.post(url).headers(headerParameters).body(payload).asObject(String.class);
-                    break;
-                case PATCH:
-                case DELETE:
-                    log.info(httpMethod.name() + " to " + urlForLog);
-                    response = Unirest.delete(url).asObject(String.class);
-                    break;
-                case OPTIONS:
+            if (HttpMethod.GET.equals(httpMethod)) {
+                log.info(httpMethod.name() + " to " + urlForLog);
+                response = Unirest.get(url).headers(headerParameters).asString();
+
+            } else if (HttpMethod.PUT.equals(httpMethod)) {
+                String logPayloadPut = payload.replaceFirst("(?s)<web:cm_password[^>]*>.*?</web:cm_password>", "<web:cm_password>*****</web:cm_password>");
+                logPayloadPut = logPayloadPut.replaceFirst("(?s)<cm_password[^>]*>.*?</cm_password>", "<cm_password>*****</cm_password>");
+                log.info(httpMethod.name() + " to " + urlForLog + " with body => " + logPayloadPut);
+                response = Unirest.put(url).headers(headerParameters).body(payload).asString();
+            } else if (HttpMethod.HEAD.equals(httpMethod)) {
+            } else if (HttpMethod.POST.equals(httpMethod)) {
+                String logPayload = payload.replaceFirst("(?s)<web:cm_password[^>]*>.*?</web:cm_password>", "<web:cm_password>*****</web:cm_password>");
+                logPayload = logPayload.replaceFirst("(?s)<cm_password[^>]*>.*?</cm_password>", "<cm_password>*****</cm_password>");
+                log.info(httpMethod.name() + " to " + urlForLog + " with body => " + logPayload);
+                response = Unirest.post(url).headers(headerParameters).body(payload).asString();
+            } else if (HttpMethod.PATCH.equals(httpMethod)) {
+            } else if (HttpMethod.DELETE.equals(httpMethod)) {
+                log.info(httpMethod.name() + " to " + urlForLog);
+                response = Unirest.delete(url).asString();
+            } else if (HttpMethod.OPTIONS.equals(httpMethod)) {
             }
-            assert response != null;
-            String jsonResponse = response.getBody().toString();
+            if (response == null) {
+                log.error("response is NULL");
+                return null;
+            }
+            String jsonResponse = response.getBody();
             String jsonResponseForLog = jsonResponse;
             if (AppUtils.getInstance().nonNull(jsonResponseForLog)) {
                 jsonResponseForLog = jsonResponseForLog.replaceAll("(?s)<tran:Specific[^>]*>.*?</tran:Specific>", "<tran:Specific><tran:CreateVirtualCard Cvv2=\"*\"/></tran:Specific>");
@@ -2072,30 +2073,6 @@ public class AppUtils {
             var7.printStackTrace();
         }
         return null;
-    }
-
-    private HttpClient getHttpClient() {
-        if (httpClient == null) {
-            TrustStrategy acceptingTrustStrategy = new TrustStrategy() {
-                @Override
-                public boolean isTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
-                    return true;
-                }
-            };
-            SSLContext sslContext = null;
-            try {
-                sslContext = org.apache.http.ssl.SSLContexts.custom()
-                        .loadTrustMaterial(null, acceptingTrustStrategy)
-                        .build();
-                SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
-                httpClient = HttpClients.custom()
-                        .setSSLSocketFactory(csf)
-                        .build();
-            } catch (NoSuchAlgorithmException | KeyManagementException | KeyStoreException e) {
-                log.error("Error exception: " + e);
-            }
-        }
-        return httpClient;
     }
 
     public BigDecimal toDecimal(String value) {
