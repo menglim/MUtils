@@ -2465,7 +2465,58 @@ public class AppUtils {
                 prop.put("mail.smtp.ssl.protocols", "TLSv1.2");
                 break;
         }
-        javax.mail.Session session = javax.mail.Session.getInstance(prop,
+        return sendEmail(prop, username, password, fromEmailAddress, toEmailAddressCommaOption, ccEmailAddressCommaOption, null, subject, body, attachmentRelativePath);
+    }
+
+    public boolean sendEmail(String host,
+                             int port,
+                             boolean authenticationEnable,
+                             SendEmailSecurityOption sslOption,
+                             String username,
+                             String password,
+                             @NonNull String fromEmailAddress,
+                             @NonNull String toEmailAddressCommaOption,
+                             String ccEmailAddressCommaOption,
+                             String bccEmailAddressCommaOption,
+                             @NonNull String subject,
+                             @NonNull String body,
+                             List<String> attachmentRelativePath) {
+
+        log.info("Sending Email via " + host + ":" + port + " with " + username + " auth: " + authenticationEnable + " ssl: " + sslOption);
+        Properties prop = new Properties();
+        prop.put("mail.smtp.host", host);
+        prop.put("mail.smtp.port", String.valueOf(port));
+        prop.put("mail.smtp.auth", String.valueOf(authenticationEnable));
+
+        switch (sslOption) {
+            case SSL:
+                prop.put("mail.smtp.ssl.enable", "true");
+                break;
+            case None:
+                break;
+            case TTSL:
+                prop.put("mail.smtp.starttls.enable", "true");
+                break;
+            case TTSLv12:
+                prop.put("mail.smtp.starttls.enable", "true");
+                prop.put("mail.smtp.ssl.protocols", "TLSv1.2");
+                break;
+        }
+        return sendEmail(prop, username, password, fromEmailAddress, toEmailAddressCommaOption, ccEmailAddressCommaOption, bccEmailAddressCommaOption, subject, body, attachmentRelativePath);
+    }
+
+    public boolean sendEmail(Properties properties,
+                             String username,
+                             String password,
+                             @NonNull String fromEmailAddress,
+                             @NonNull String toEmailAddressCommaOption,
+                             String ccEmailAddressCommaOption,
+                             String bccEmailAddressCommaOption,
+                             @NonNull String subject,
+                             @NonNull String body,
+                             List<String> attachmentRelativePath) {
+
+        javax.mail.Session session = javax.mail.Session.getInstance(properties,
                 new javax.mail.Authenticator() {
                     protected javax.mail.PasswordAuthentication getPasswordAuthentication() {
                         return new javax.mail.PasswordAuthentication(username, password);
@@ -2480,6 +2531,10 @@ public class AppUtils {
             if (AppUtils.getInstance().nonNull(ccEmailAddressCommaOption)) {
                 msg.setRecipients(Message.RecipientType.CC, InternetAddress.parse(ccEmailAddressCommaOption, false));
             }
+            if (AppUtils.getInstance().nonNull(bccEmailAddressCommaOption)) {
+                msg.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(bccEmailAddressCommaOption, false));
+            }
+
             msg.setSubject(subject);
             MimeBodyPart text = new MimeBodyPart();
             text.setDataHandler(new DataHandler(new HTMLDataSource(body)));
