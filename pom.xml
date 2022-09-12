@@ -99,7 +99,7 @@
         <dependency>
             <groupId>com.konghq</groupId>
             <artifactId>unirest-java</artifactId>
-            <version>3.13.10</version>
+            <version>3.13.11</version>
         </dependency>
         <!--        <dependency>-->
         <!--            <groupId>com.fasterxml.jackson.core</groupId>-->
@@ -150,7 +150,7 @@
         <dependency>
             <groupId>com.github.pengrad</groupId>
             <artifactId>java-telegram-bot-api</artifactId>
-            <version>6.0.1</version>
+            <version>6.2.0</version>
         </dependency>
 
         <!--        For SSHJ-->
