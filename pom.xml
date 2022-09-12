@@ -6,7 +6,7 @@
 
     <groupId>com.github.menglim</groupId>
     <artifactId>mutils</artifactId>
-    <version>1.2.31</version>
+    <version>1.2.32</version>
     <packaging>jar</packaging>
     <name>${project.artifactId}</name>
     <description>Collection of Utils</description>
