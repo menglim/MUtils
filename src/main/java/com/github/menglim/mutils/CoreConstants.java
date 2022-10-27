@@ -109,7 +109,8 @@ public class CoreConstants {
     public enum DeviceType {
         Android,
         iOS,
-        Browser;
+        Browser,
+        Huawei;
 
         public static CoreConstants.DeviceType[] getDeviceType(Optional<String[]> stringOptional) {
             if (!stringOptional.isPresent()) return DeviceType.values();
