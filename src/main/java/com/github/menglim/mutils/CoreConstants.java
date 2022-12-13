@@ -172,6 +172,11 @@ public class CoreConstants {
         COMPANY,
         CUSTOMER_NOTICE,
         ANNOUNCEMENT,
+        KYC_NATIONAL_ID_FRONT,
+        KYC_NATIONAL_ID_BACK,
+        KYC_SELFIE,
+        KYC_PASSPORT_FRONT,
+        KYC_PASSPORT_BACK
     }
 
     public enum StockType {
