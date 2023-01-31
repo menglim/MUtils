@@ -177,7 +177,8 @@ public class CoreConstants {
         KYC_SELFIE,
         KYC_PASSPORT_FRONT,
         KYC_PASSPORT_BACK,
-        KYC_REPORT
+        KYC_REPORT,
+        SUPPLIER_CONTACT_PROFILE
     }
 
     public enum StockType {
