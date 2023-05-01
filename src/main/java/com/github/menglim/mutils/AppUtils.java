@@ -2604,7 +2604,7 @@ public class AppUtils {
 
         @Override
         public String getContentType() {
-            return "text/html";
+            return "text/html; charset=utf-8";
         }
 
         @Override
