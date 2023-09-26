@@ -2450,6 +2450,7 @@ public class AppUtils {
         prop.put("mail.smtp.host", host);
         prop.put("mail.smtp.port", String.valueOf(port));
         prop.put("mail.smtp.auth", String.valueOf(authenticationEnable));
+        prop.put("mail.smtp.ssl.trust", "*");
 
         switch (sslOption) {
             case SSL:
@@ -2487,6 +2488,7 @@ public class AppUtils {
         prop.put("mail.smtp.host", host);
         prop.put("mail.smtp.port", String.valueOf(port));
         prop.put("mail.smtp.auth", String.valueOf(authenticationEnable));
+        prop.put("mail.smtp.ssl.trust", "*");
 
         switch (sslOption) {
             case SSL:
