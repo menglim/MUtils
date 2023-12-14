@@ -178,7 +178,8 @@ public class CoreConstants {
         KYC_PASSPORT_FRONT,
         KYC_PASSPORT_BACK,
         KYC_REPORT,
-        SUPPLIER_CONTACT_PROFILE
+        SUPPLIER_CONTACT_PROFILE,
+        COUNTRY_FLAG
     }
 
     public enum StockType {

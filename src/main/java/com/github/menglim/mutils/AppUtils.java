@@ -2075,6 +2075,39 @@ public class AppUtils {
         return null;
     }
 
+    public byte[] getByte(String url, KeyValue<String, String>... additionalHeaderParameters) {
+        String urlForLog = url;
+        String payloadForLog = "";
+        String reference = "REF_" + System.currentTimeMillis() + "_" + AppUtils.getInstance().getRandomSecuredString(20);
+        List<Integer> httpSuccessfulStatus = Arrays.asList(200, 201);
+        Unirest.config().reset();
+        Unirest.config().connectTimeout(UNIREST_TIMEOUT);
+        Unirest.config().socketTimeout(UNIREST_TIMEOUT);
+        Unirest.config().verifySsl(false);
+        HttpResponse<byte[]> response = null;
+        String mediaType = "text/plain";
+
+        HashMap<String, String> headerParameters = new HashMap<>();
+        if (additionalHeaderParameters != null) {
+            for (int i = 0; i < additionalHeaderParameters.length; i++) {
+                KeyValue<String, String> aValue = additionalHeaderParameters[i];
+                if (aValue != null) {
+                    if (AppUtils.getInstance().nonNull(aValue.getKey())) {
+                        headerParameters.put(aValue.getKey(), aValue.getValue());
+                    }
+                }
+            }
+        }
+        headerParameters.put("Content-Type", mediaType);
+        response = Unirest.get(url).headers(headerParameters).asBytes();
+        if (response == null) {
+            log.error(reference + "processToServer " + urlForLog + " | " + " Response is NULL " + " with body " + payloadForLog);
+            return null;
+        }
+        return response.getBody();
+
+    }
+
     public BigDecimal toDecimal(String value) {
         if (AppUtils.getInstance().isNull(value)) return BigDecimal.ZERO;
         BigDecimal bigDecimal = new BigDecimal(value);
