@@ -44,6 +44,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.w3c.dom.Document;
@@ -1850,10 +1851,10 @@ public class AppUtils {
         }
     }
 
-    public Date toDate(int year, int month, int day, int hour, int minute, int second) {
+    public Date toDate(int year, CoreConstants.CalendarMonth month, int day, int hour, int minute, int second) {
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.YEAR, year);
-        cal.set(Calendar.MONTH, month);
+        cal.set(Calendar.MONTH, month.ordinal());
         cal.set(Calendar.DAY_OF_MONTH, day);
         cal.set(Calendar.HOUR_OF_DAY, hour);
         cal.set(Calendar.MINUTE, minute);
@@ -1863,16 +1864,56 @@ public class AppUtils {
         return date;
     }
 
-    public Date toDate(int year, int month, int day, int hour, int minute) {
+    public Date toDate(int year, CoreConstants.CalendarMonth month, int day, int hour, int minute) {
         return toDate(year, month, day, hour, minute, 0);
     }
 
-    public Date toDate(int year, int month, int day, int hour) {
+    public Date toDate(int year, CoreConstants.CalendarMonth month, int day, int hour) {
         return toDate(year, month, day, hour, 0, 0);
     }
 
-    public Date toDate(int year, int month, int day) {
+    public Date toDate(int year, CoreConstants.CalendarMonth month, int day) {
         return toDate(year, month, day, 0, 0, 0);
+    }
+
+    public int getDayOfMonth(Date date) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        return cal.get(Calendar.DAY_OF_MONTH);
+    }
+
+    public int getMonthOfYear(Date date) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        return cal.get(Calendar.MONTH);
+    }
+    public int getYear(Date date) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        return cal.get(Calendar.YEAR);
+    }
+
+    public Date plusDay(@NotNull Date date, int numberOfDay) {
+        return Date.from(date.toInstant().plus(numberOfDay, ChronoUnit.DAYS));
+    }
+
+    public Date plusHour(@NotNull Date date, int numberOfHour) {
+        return Date.from(date.toInstant().plus(numberOfHour, ChronoUnit.HOURS));
+    }
+
+    public Date plusMinutes(@NotNull Date date, int numberOfMinutes) {
+        return Date.from(date.toInstant().plus(numberOfMinutes, ChronoUnit.MINUTES));
+    }
+
+    public Date plusSeconds(@NotNull Date date, long numberOfSeconds) {
+        return Date.from(date.toInstant().plus(numberOfSeconds, ChronoUnit.SECONDS));
+    }
+    public Date plusMilliseconds(@NotNull Date date, long numberOfMilliseconds) {
+        return Date.from(date.toInstant().plus(numberOfMilliseconds, ChronoUnit.MILLIS));
+    }
+
+    public Date minusDay(@NotNull Date date, int numberOfDay) {
+        return Date.from(date.toInstant().minus(numberOfDay, ChronoUnit.DAYS));
     }
 
     private int getLast2Digit(long amount) {
