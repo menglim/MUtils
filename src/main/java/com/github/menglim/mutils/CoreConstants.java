@@ -473,21 +473,4 @@ public class CoreConstants {
         CapitalOnly,
         All
     }
-
-    public enum CalendarMonth {
-        January,
-        February,
-        March,
-        April,
-        May,
-        June,
-        July,
-        August,
-        September,
-        October,
-        November,
-        December;
-
-        public static final CalendarMonth[] values = values();
-    }
 }

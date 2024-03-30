@@ -84,6 +84,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.Key;
 import java.security.SecureRandom;
+import java.sql.Time;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -1851,7 +1852,7 @@ public class AppUtils {
         }
     }
 
-    public Date toDate(int year, CoreConstants.CalendarMonth month, int day, int hour, int minute, int second) {
+    public Date toDate(int year, Month month, int day, int hour, int minute, int second) {
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.YEAR, year);
         cal.set(Calendar.MONTH, month.ordinal());
@@ -1864,18 +1865,69 @@ public class AppUtils {
         return date;
     }
 
-    public Date toDate(int year, CoreConstants.CalendarMonth month, int day, int hour, int minute) {
+    public Date toDate(int year, Month month, int day, int hour, int minute) {
         return toDate(year, month, day, hour, minute, 0);
     }
 
-    public Date toDate(int year, CoreConstants.CalendarMonth month, int day, int hour) {
+    public Date toDate(int year, Month month, int day, int hour) {
         return toDate(year, month, day, hour, 0, 0);
     }
 
-    public Date toDate(int year, CoreConstants.CalendarMonth month, int day) {
+    public Date toDate(int year, Month month, int day) {
         return toDate(year, month, day, 0, 0, 0);
     }
 
+    public Time getTime(Date date){
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        return new Time(cal.getTime().getTime());
+    }
+
+    public long getTimeAsLong(Date date){
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        return cal.getTime().getTime();
+    }
+
+    public Date toDate(LocalDate localDate)
+    {
+        Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        return date;
+    }
+    public long getTimeAsLong(Time time){
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(time);
+        return cal.getTime().getTime();
+    }
+
+    public int getMinute(Time time) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(time);
+        int value = cal.get(Calendar.MINUTE);
+        return value;
+    }
+    public int getHour(Time time) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(time);
+        int value = cal.get(Calendar.HOUR_OF_DAY);
+        return value;
+    }
+
+    public int getSecond(Date date) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        return cal.get(Calendar.SECOND);
+    }
+    public int getMinute(Date date) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        return cal.get(Calendar.MINUTE);
+    }
+    public int getHour(Date date) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        return cal.get(Calendar.HOUR_OF_DAY);
+    }
     public int getDayOfMonth(Date date) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
