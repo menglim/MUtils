@@ -305,7 +305,13 @@ public class AppUtils {
     }
 
     public byte[] fromBase64ToByte(String base64Text) {
-        byte[] data = Base64.getDecoder().decode(base64Text.getBytes());
+        byte[] data = null;
+        try {
+            data = Base64.getDecoder().decode(base64Text.getBytes());
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+            return null;
+        }
         return data;
     }
 
@@ -1877,24 +1883,24 @@ public class AppUtils {
         return toDate(year, month, day, 0, 0, 0);
     }
 
-    public Time getTime(Date date){
+    public Time getTime(Date date) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
         return new Time(cal.getTime().getTime());
     }
 
-    public long getTimeAsLong(Date date){
+    public long getTimeAsLong(Date date) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
         return cal.getTime().getTime();
     }
 
-    public Date toDate(LocalDate localDate)
-    {
+    public Date toDate(LocalDate localDate) {
         Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
         return date;
     }
-    public long getTimeAsLong(Time time){
+
+    public long getTimeAsLong(Time time) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(time);
         return cal.getTime().getTime();
@@ -1906,6 +1912,7 @@ public class AppUtils {
         int value = cal.get(Calendar.MINUTE);
         return value;
     }
+
     public int getHour(Time time) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(time);
@@ -1918,16 +1925,19 @@ public class AppUtils {
         cal.setTime(date);
         return cal.get(Calendar.SECOND);
     }
+
     public int getMinute(Date date) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
         return cal.get(Calendar.MINUTE);
     }
+
     public int getHour(Date date) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
         return cal.get(Calendar.HOUR_OF_DAY);
     }
+
     public int getDayOfMonth(Date date) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
@@ -1939,6 +1949,7 @@ public class AppUtils {
         cal.setTime(date);
         return cal.get(Calendar.MONTH);
     }
+
     public int getYear(Date date) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
@@ -1960,6 +1971,7 @@ public class AppUtils {
     public Date plusSeconds(@NotNull Date date, long numberOfSeconds) {
         return Date.from(date.toInstant().plus(numberOfSeconds, ChronoUnit.SECONDS));
     }
+
     public Date plusMilliseconds(@NotNull Date date, long numberOfMilliseconds) {
         return Date.from(date.toInstant().plus(numberOfMilliseconds, ChronoUnit.MILLIS));
     }
